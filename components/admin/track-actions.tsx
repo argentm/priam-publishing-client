@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { API_ENDPOINTS } from '@/lib/constants';
+import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
+import Link from 'next/link';
 
 interface TrackActionsProps {
   track: {
@@ -45,6 +46,16 @@ export function TrackActions({ track }: TrackActionsProps) {
 
   return (
     <div className="flex items-center justify-end space-x-2">
+      <Button
+        variant="outline"
+        size="sm"
+        asChild
+        title="Edit track"
+      >
+        <Link href={`${ROUTES.ADMIN_TRACKS}/${track.id}`}>
+          <Edit className="w-4 h-4" />
+        </Link>
+      </Button>
       <Button
         variant="destructive"
         size="sm"

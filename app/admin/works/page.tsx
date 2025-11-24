@@ -56,10 +56,11 @@ async function getWorks(search?: string, limit = 50, offset = 0): Promise<WorksR
 export default async function AdminWorksPage({
   searchParams,
 }: {
-  searchParams: { search?: string; page?: string };
+  searchParams: Promise<{ search?: string; page?: string }>;
 }) {
-  const search = searchParams.search || '';
-  const page = parseInt(searchParams.page || '1', 10);
+  const { search: searchQuery, page: pageQuery } = await searchParams;
+  const search = searchQuery || '';
+  const page = parseInt(pageQuery || '1', 10);
   const limit = 50;
   const offset = (page - 1) * limit;
 
@@ -68,21 +69,19 @@ export default async function AdminWorksPage({
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Works</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage all works across all accounts
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>All Works</CardTitle>
-              <CardDescription>
-                {total} work{total !== 1 ? 's' : ''} found
-              </CardDescription>
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <CardTitle>All Works</CardTitle>
+                <CardDescription>
+                  {total} work{total !== 1 ? 's' : ''} found
+                </CardDescription>
+              </div>
+              <Button asChild>
+                <Link href="/admin/works/new">+ New Work</Link>
+              </Button>
             </div>
             <form action="/admin/works" method="get" className="flex gap-2">
               <Input

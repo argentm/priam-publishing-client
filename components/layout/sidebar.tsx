@@ -25,9 +25,18 @@ interface NavItem {
 interface SidebarProps {
   userRole?: string;
   workspaceId?: string;
+  onClose?: () => void;
 }
 
-export function Sidebar({ userRole, workspaceId }: SidebarProps) {
+const NavContent = ({ 
+  userRole, 
+  workspaceId, 
+  onClose 
+}: { 
+  userRole?: string; 
+  workspaceId?: string; 
+  onClose?: () => void;
+}) => {
   const pathname = usePathname();
   const isAdmin = userRole === 'admin' || userRole === 'owner';
 
@@ -83,10 +92,16 @@ export function Sidebar({ userRole, workspaceId }: SidebarProps) {
     return pathname.startsWith(href);
   };
 
+  const handleLinkClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border flex flex-col">
+    <>
       <div className="flex items-center justify-center h-16 px-4 border-b border-border">
-        <div className="text-2xl font-bold text-foreground">PP</div>
+        <div className="text-2xl font-bold text-primary">PP</div>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-2">
@@ -99,6 +114,7 @@ export function Sidebar({ userRole, workspaceId }: SidebarProps) {
               <li key={item.name}>
                 <Link
                   href={item.href}
+                  onClick={handleLinkClick}
                   className={cn(
                     'flex items-center px-4 py-3 rounded-lg transition-colors',
                       active
@@ -118,12 +134,32 @@ export function Sidebar({ userRole, workspaceId }: SidebarProps) {
       <div className="p-4 border-t border-border">
         <Link
           href={workspaceId ? ROUTES.WORKSPACE_SECURITY(workspaceId) : '/dashboard/security'}
+          onClick={handleLinkClick}
           className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           <Shield className="w-5 h-5 mr-3" />
           <span className="text-sm font-medium">Security</span>
         </Link>
       </div>
+    </>
+  );
+};
+
+export function Sidebar({ userRole, workspaceId }: SidebarProps) {
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-card border-r border-border flex-col z-40">
+        <NavContent userRole={userRole} workspaceId={workspaceId} />
+      </aside>
+    </>
+  );
+}
+
+export function MobileSidebar({ userRole, workspaceId, onClose }: SidebarProps) {
+  return (
+    <div className="flex flex-col h-full">
+      <NavContent userRole={userRole} workspaceId={workspaceId} onClose={onClose} />
     </div>
   );
 }

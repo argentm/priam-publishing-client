@@ -3,7 +3,7 @@ import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Users, Building2, Shield, ArrowRight, Music, Disc, FileText } from 'lucide-react';
+import { Users, Building2, Shield, ArrowRight, Music, Disc, FileText, UserCircle } from 'lucide-react';
 
 async function getAdminStats() {
   const client = await createServerApiClient();
@@ -33,13 +33,6 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Manage users, accounts, and system settings
-        </p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
@@ -171,6 +164,15 @@ export default async function AdminDashboardPage() {
                 <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Manage Contracts
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-between">
+              <Link href={ROUTES.ADMIN_COMPOSERS}>
+                <span className="flex items-center gap-2">
+                  <UserCircle className="w-4 h-4" />
+                  Manage Composers
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </Link>

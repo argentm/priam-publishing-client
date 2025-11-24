@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { API_ENDPOINTS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/constants';
 
 interface ContractActionsProps {
   contract: {
@@ -45,6 +47,16 @@ export function ContractActions({ contract }: ContractActionsProps) {
 
   return (
     <div className="flex items-center justify-end space-x-2">
+      <Button
+        variant="outline"
+        size="sm"
+        asChild
+        title="Edit contract"
+      >
+        <Link href={`${ROUTES.ADMIN_CONTRACTS}/${contract.id}`}>
+          <Edit className="w-4 h-4" />
+        </Link>
+      </Button>
       <Button
         variant="destructive"
         size="sm"

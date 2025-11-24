@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { API_ENDPOINTS } from '@/lib/constants';
+import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
+import Link from 'next/link';
 
 interface WorkActionsProps {
   work: {
@@ -45,6 +46,16 @@ export function WorkActions({ work }: WorkActionsProps) {
 
   return (
     <div className="flex items-center justify-end space-x-2">
+      <Button
+        variant="outline"
+        size="sm"
+        asChild
+        title="Edit work"
+      >
+        <Link href={`${ROUTES.ADMIN_WORKS}/${work.id}`}>
+          <Edit className="w-4 h-4" />
+        </Link>
+      </Button>
       <Button
         variant="destructive"
         size="sm"
