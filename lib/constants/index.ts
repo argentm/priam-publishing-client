@@ -36,6 +36,8 @@ export const ROUTES = {
   WORKSPACE_USERS: (id: string) => `/dashboard/account/${id}/users`,
   WORKSPACE_SETTINGS: (id: string) => `/dashboard/account/${id}/settings`,
   WORKSPACE_SECURITY: (id: string) => `/dashboard/account/${id}/security`,
+  WORKSPACE_COMPOSERS: (id: string) => `/dashboard/account/${id}/composers`,
+  WORKSPACE_COMPOSERS_NEW: (id: string) => `/dashboard/account/${id}/composers/new`,
 } as const;
 
 export const USER_ROLES = {
@@ -48,6 +50,7 @@ export const API_ENDPOINTS = {
   DASHBOARD: '/api/dashboard',
   ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
   DASHBOARD_ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
+  DASHBOARD_COMPOSERS: (accountId: string) => `/api/dashboard/account/${accountId}/composers`,
   ACCOUNTS: '/api/accounts',
   WORKS: '/api/works',
   COMPOSERS: '/api/composers',

@@ -71,7 +71,7 @@ const getNavSections = (accountId?: string): NavSection[] => [
       },
       {
         name: 'Composers',
-        href: accountId ? `/dashboard/account/${accountId}/composers` : '#',
+        href: accountId ? ROUTES.WORKSPACE_COMPOSERS(accountId) : '#',
         icon: UserCircle,
         requiresAccount: true,
       },
