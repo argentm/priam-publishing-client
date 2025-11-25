@@ -98,8 +98,8 @@ export default async function AccountPage({ params }: PageProps) {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" asChild>
-            <Link href={ROUTES.ACCOUNT_WORKS_NEW(id)}>
+          <Link href={ROUTES.ACCOUNT_WORKS_NEW(id)} className="block">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -111,11 +111,11 @@ export default async function AccountPage({ params }: PageProps) {
                   </div>
                 </div>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" asChild>
-            <Link href={ROUTES.WORKSPACE_WORKS(id)}>
+          <Link href={ROUTES.WORKSPACE_WORKS(id)} className="block">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
@@ -127,8 +127,8 @@ export default async function AccountPage({ params }: PageProps) {
                   </div>
                 </div>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
           <Card className="hover:shadow-md transition-shadow opacity-60 cursor-not-allowed">
             <CardContent className="p-6">
