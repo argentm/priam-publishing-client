@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -116,12 +116,33 @@ interface AccountSwitcherProps {
 function AccountSwitcher({ accounts, currentAccount, isCollapsed }: AccountSwitcherProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch from Radix UI generated IDs
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleAccountSelect = (account: Account) => {
     // Navigate to the selected account's dashboard
     router.push(ROUTES.WORKSPACE(account.id));
     setOpen(false);
   };
+
+  // Render placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className={cn(
+        "animate-pulse",
+        isCollapsed ? "w-full h-12 p-0 flex justify-center items-center" : "w-full h-auto p-3"
+      )}>
+        <div className={cn(
+          "rounded-lg bg-white/10",
+          isCollapsed ? "w-8 h-8" : "w-10 h-10"
+        )} />
+      </div>
+    );
+  }
 
   if (isCollapsed) {
     return (

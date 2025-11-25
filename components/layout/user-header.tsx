@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Menu, ChevronRight, LogOut, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -107,9 +107,15 @@ function getBreadcrumbs(pathname: string, accountName?: string): { label: string
 
 export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const displayName = user.full_name || user.email || 'User';
   
+  // Prevent hydration mismatch from Radix UI generated IDs
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const pageInfo = getPageInfo(pathname, currentAccount?.name);
   const breadcrumbs = getBreadcrumbs(pathname, currentAccount?.name);
 
@@ -118,22 +124,26 @@ export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderPr
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 border-0 ui-sidebar">
-              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-              <MobileUserSidebar 
-                onClose={() => setMobileMenuOpen(false)} 
-                accounts={accounts}
-                currentAccount={currentAccount}
-              />
-            </SheetContent>
-          </Sheet>
+          {mounted ? (
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0 border-0 ui-sidebar">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <MobileUserSidebar 
+                  onClose={() => setMobileMenuOpen(false)} 
+                  accounts={accounts}
+                  currentAccount={currentAccount}
+                />
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <div className="w-9 h-9 bg-muted rounded animate-pulse" />
+          )}
         </div>
 
         {/* Page Title and Breadcrumbs - Desktop */}
@@ -161,60 +171,70 @@ export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderPr
 
         {/* User Info and Actions */}
         <div className="flex items-center space-x-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-muted/50">
-                <div className="hidden md:flex flex-col items-end">
-                  <p className="text-sm font-medium text-foreground">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {currentAccount?.name || 'No account selected'}
-                  </p>
-                </div>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-white flex items-center justify-center">
-                  <User className="w-4 h-4" />
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div>
-                  <p className="font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {currentAccount && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link href={ROUTES.WORKSPACE_SETTINGS(currentAccount.id)}>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Account Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {user.is_admin && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link href={ROUTES.ADMIN_DASHBOARD}>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Admin Panel
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem asChild>
-                <form action="/auth/signout" method="post" className="w-full">
-                  <button type="submit" className="flex items-center w-full text-left">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign out
-                  </button>
-                </form>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {mounted ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-muted/50">
+                  <div className="hidden md:flex flex-col items-end">
+                    <p className="text-sm font-medium text-foreground">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currentAccount?.name || 'No account selected'}
+                    </p>
+                  </div>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-white flex items-center justify-center">
+                    <User className="w-4 h-4" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div>
+                    <p className="font-medium">{displayName}</p>
+                    <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {currentAccount && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={ROUTES.WORKSPACE_SETTINGS(currentAccount.id)}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Account Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {user.is_admin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={ROUTES.ADMIN_DASHBOARD}>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem asChild>
+                  <form action="/auth/signout" method="post" className="w-full">
+                    <button type="submit" className="flex items-center w-full text-left">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign out
+                    </button>
+                  </form>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center gap-3 px-2">
+              <div className="hidden md:flex flex-col items-end">
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-16 bg-muted rounded animate-pulse mt-1" />
+              </div>
+              <div className="w-9 h-9 rounded-full bg-muted animate-pulse" />
+            </div>
+          )}
         </div>
       </div>
     </header>
