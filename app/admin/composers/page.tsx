@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { createServerApiClient } from '@/lib/api/server-client';
-import { API_ENDPOINTS } from '@/lib/constants';
+import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { ComposerActions } from '@/components/admin/composer-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -53,10 +53,11 @@ async function getComposers(search?: string, limit = 50, offset = 0): Promise<Co
 export default async function AdminComposersPage({
   searchParams,
 }: {
-  searchParams: { search?: string; page?: string };
+  searchParams: Promise<{ search?: string; page?: string }>;
 }) {
-  const search = searchParams.search || '';
-  const page = parseInt(searchParams.page || '1', 10);
+  const { search: searchParam, page: pageParam } = await searchParams;
+  const search = searchParam || '';
+  const page = parseInt(pageParam || '1', 10);
   const limit = 50;
   const offset = (page - 1) * limit;
 
@@ -135,7 +136,7 @@ export default async function AdminComposersPage({
                       <TableCell>
                         {composer.account ? (
                           <Link
-                            href={`/dashboard/account/${composer.account.id}`}
+                            href={ROUTES.ADMIN_ACCOUNT(composer.account.id)}
                             className="text-primary hover:underline"
                           >
                             {composer.account.name}

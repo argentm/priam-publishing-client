@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { createServerApiClient } from '@/lib/api/server-client';
-import { API_ENDPOINTS } from '@/lib/constants';
+import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { ContractActions } from '@/components/admin/contract-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -136,7 +136,7 @@ export default async function AdminContractsPage({
                       <TableCell>
                         {contract.account ? (
                           <Link
-                            href={`/dashboard/account/${contract.account.id}`}
+                            href={ROUTES.ADMIN_ACCOUNT(contract.account.id)}
                             className="text-primary hover:underline"
                           >
                             {contract.account.name}

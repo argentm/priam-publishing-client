@@ -9,18 +9,19 @@ import {
 } from '@/components/ui/table';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
-import { TrackActions } from '@/components/admin/track-actions';
+import { PayeeActions } from '@/components/admin/payee-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
-interface Track {
+interface Payee {
   id: string;
-  title: string;
-  artist?: string | null;
-  isrc: string;
-  fuga_id?: string | null;
+  name: string;
+  client_id?: string | null;
+  foreign_id?: string | null;
+  country?: string | null;
+  vat_no?: string | null;
   account?: {
     id: string;
     name: string;
@@ -28,14 +29,12 @@ interface Track {
   created_at: string;
 }
 
-interface TracksResponse {
-  tracks: Track[];
+interface PayeesResponse {
+  payees: Payee[];
   total: number;
-  limit: number;
-  offset: number;
 }
 
-async function getTracks(search?: string, limit = 50, offset = 0): Promise<TracksResponse> {
+async function getPayees(search?: string, limit = 50, offset = 0): Promise<PayeesResponse> {
   const client = await createServerApiClient();
   try {
     const params = new URLSearchParams({
@@ -45,46 +44,49 @@ async function getTracks(search?: string, limit = 50, offset = 0): Promise<Track
     if (search) {
       params.append('search', search);
     }
-    return await client.get<TracksResponse>(`${API_ENDPOINTS.ADMIN_TRACKS}?${params.toString()}`);
+    return await client.get<PayeesResponse>(`${API_ENDPOINTS.ADMIN_PAYEES}?${params.toString()}`);
   } catch {
-    return { tracks: [], total: 0, limit, offset };
+    return { payees: [], total: 0 };
   }
 }
 
-export default async function AdminTracksPage({
+export default async function AdminPayeesPage({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; page?: string }>;
 }) {
-  const { search: searchQuery, page: pageQuery } = await searchParams;
-  const search = searchQuery || '';
-  const page = parseInt(pageQuery || '1', 10);
+  const { search: searchParam, page: pageParam } = await searchParams;
+  const search = searchParam || '';
+  const page = parseInt(pageParam || '1', 10);
   const limit = 50;
   const offset = (page - 1) * limit;
 
-  const { tracks, total } = await getTracks(search, limit, offset);
+  const { payees, total } = await getPayees(search, limit, offset);
   const totalPages = Math.ceil(total / limit);
 
   return (
     <>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-foreground">Payees</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Manage all payees across all accounts
+        </p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center justify-between w-full">
-              <div>
-                <CardTitle>All Tracks</CardTitle>
-                <CardDescription>
-                  {total} track{total !== 1 ? 's' : ''} found
-                </CardDescription>
-              </div>
-              <Button asChild>
-                <Link href="/admin/tracks/new">+ New Track</Link>
-              </Button>
+            <div>
+              <CardTitle>All Payees</CardTitle>
+              <CardDescription>
+                {total} payee{total !== 1 ? 's' : ''} found
+              </CardDescription>
             </div>
-            <form action="/admin/tracks" method="get" className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <form action="/admin/payees" method="get" className="flex gap-2">
               <Input
                 name="search"
-                placeholder="Search by title, ISRC, artist..."
+                placeholder="Search by name, ID..."
                 defaultValue={search}
                 className="w-64"
               />
@@ -93,59 +95,67 @@ export default async function AdminTracksPage({
               </Button>
               {search && (
                 <Button type="button" variant="ghost" asChild>
-                  <Link href="/admin/tracks">Clear</Link>
+                  <Link href="/admin/payees">Clear</Link>
                 </Button>
               )}
-            </form>
+              </form>
+              <Button asChild>
+                <Link href="/admin/payees/new">+ New Payee</Link>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {tracks.length === 0 ? (
+          {payees.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {search ? 'No tracks found matching your search' : 'No tracks found'}
+              {search ? 'No payees found matching your search' : 'No payees found'}
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Artist</TableHead>
-                    <TableHead>ISRC</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Client ID</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>VAT No</TableHead>
                     <TableHead>Account</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tracks.map((track) => (
-                    <TableRow key={track.id}>
+                  {payees.map((payee) => (
+                    <TableRow key={payee.id}>
                       <TableCell className="font-medium">
-                        {track.title || 'Untitled'}
+                        {payee.name}
                       </TableCell>
-                      <TableCell>{track.artist || '-'}</TableCell>
                       <TableCell className="font-mono text-sm">
-                        {track.isrc || '-'}
+                        {payee.client_id || '-'}
+                      </TableCell>
+                      <TableCell>{payee.country || '-'}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {payee.vat_no || '-'}
                       </TableCell>
                       <TableCell>
-                        {track.account ? (
+                        {payee.account ? (
                           <Link
-                            href={ROUTES.ADMIN_ACCOUNT(track.account.id)}
+                            href={ROUTES.ADMIN_ACCOUNT(payee.account.id)}
                             className="text-primary hover:underline"
                           >
-                            {track.account.name}
+                            {payee.account.name}
                           </Link>
                         ) : (
                           '-'
                         )}
                       </TableCell>
                       <TableCell>
-                        {track.created_at
-                          ? new Date(track.created_at).toLocaleDateString()
+                        {payee.created_at
+                          ? new Date(payee.created_at).toLocaleDateString()
                           : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <TrackActions track={track} />
+                        <PayeeActions payee={payee} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -160,7 +170,7 @@ export default async function AdminTracksPage({
                     {page > 1 && (
                       <Button variant="outline" size="sm" asChild>
                         <Link
-                          href={`/admin/tracks?${new URLSearchParams({
+                          href={`/admin/payees?${new URLSearchParams({
                             ...(search && { search }),
                             page: (page - 1).toString(),
                           }).toString()}`}
@@ -173,7 +183,7 @@ export default async function AdminTracksPage({
                     {page < totalPages && (
                       <Button variant="outline" size="sm" asChild>
                         <Link
-                          href={`/admin/tracks?${new URLSearchParams({
+                          href={`/admin/payees?${new URLSearchParams({
                             ...(search && { search }),
                             page: (page + 1).toString(),
                           }).toString()}`}
@@ -193,4 +203,3 @@ export default async function AdminTracksPage({
     </>
   );
 }
-

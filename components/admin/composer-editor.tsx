@@ -126,7 +126,7 @@ export function ComposerEditor({ composer: initialComposer, isNew = false }: Com
             <h1 className="text-3xl font-bold">{composer.name || 'Unnamed Composer'}</h1>
             <p className="text-sm text-muted-foreground">
               {composer.account?.name && (
-                <>Account: <Link href={`/dashboard/account/${composer.account.id}`} className="text-primary hover:underline">{composer.account.name}</Link></>
+                <>Account: <Link href={ROUTES.ADMIN_ACCOUNT(composer.account.id)} className="text-primary hover:underline">{composer.account.name}</Link></>
               )}
             </p>
           </div>

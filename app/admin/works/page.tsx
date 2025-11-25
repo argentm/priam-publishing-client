@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { createServerApiClient } from '@/lib/api/server-client';
-import { API_ENDPOINTS } from '@/lib/constants';
+import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { WorkActions } from '@/components/admin/work-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -131,7 +131,7 @@ export default async function AdminWorksPage({
                       <TableCell>
                         {work.account ? (
                           <Link
-                            href={`/dashboard/account/${work.account.id}`}
+                            href={ROUTES.ADMIN_ACCOUNT(work.account.id)}
                             className="text-primary hover:underline"
                           >
                             {work.account.name}

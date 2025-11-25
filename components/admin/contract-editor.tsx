@@ -122,7 +122,7 @@ export function ContractEditor({ contract: initialContract, isNew = false }: Con
             <h1 className="text-3xl font-bold">{contract.name || 'Unnamed Contract'}</h1>
             <p className="text-sm text-muted-foreground">
               {contract.account?.name && (
-                <>Account: <Link href={`/dashboard/account/${contract.account.id}`} className="text-primary hover:underline">{contract.account.name}</Link></>
+                <>Account: <Link href={ROUTES.ADMIN_ACCOUNT(contract.account.id)} className="text-primary hover:underline">{contract.account.name}</Link></>
               )}
             </p>
           </div>

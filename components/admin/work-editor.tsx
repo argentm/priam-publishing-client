@@ -223,7 +223,7 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
             <p className="text-sm text-muted-foreground">
               {work.account?.name && (
                 <>
-                  Account: <Link href={`/dashboard/account/${work.account.id}`} className="text-primary hover:underline">{work.account.name}</Link>
+                  Account: <Link href={ROUTES.ADMIN_ACCOUNT(work.account.id)} className="text-primary hover:underline">{work.account.name}</Link>
                 </>
               )}
             </p>

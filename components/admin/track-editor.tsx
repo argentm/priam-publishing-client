@@ -139,7 +139,7 @@ export function TrackEditor({ track: initialTrack, isNew = false }: TrackEditorP
             <p className="text-sm text-muted-foreground">
               {track.account?.name && (
                 <>
-                  Account: <Link href={`/dashboard/account/${track.account.id}`} className="text-primary hover:underline">{track.account.name}</Link>
+                  Account: <Link href={ROUTES.ADMIN_ACCOUNT(track.account.id)} className="text-primary hover:underline">{track.account.name}</Link>
                 </>
               )}
             </p>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { createClientApiClient } from '@/lib/api/client';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@/lib/types';
 import { Edit, Trash2, Shield, ShieldOff } from 'lucide-react';

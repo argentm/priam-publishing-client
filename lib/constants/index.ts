@@ -15,6 +15,7 @@ export const ROUTES = {
   ADMIN_WORKS: '/admin/works',
   ADMIN_TRACKS: '/admin/tracks',
   ADMIN_CONTRACTS: '/admin/contracts',
+  ADMIN_PAYEES: '/admin/payees',
   ADMIN_COMPOSERS: '/admin/composers',
   ACCOUNT: (id: string) => `/dashboard/account/${id}`,
   ACCOUNT_NEW: '/dashboard/account/new',
@@ -26,6 +27,15 @@ export const ROUTES = {
   ACCOUNT_USERS: (id: string) => `/dashboard/account/${id}/users`,
   ACCOUNT_SETTINGS: (id: string) => `/dashboard/account/${id}/settings`,
   ACCOUNT_SECURITY: (id: string) => `/dashboard/account/${id}/security`,
+  // Workspace routes (aliases for account routes)
+  WORKSPACE: (id: string) => `/dashboard/account/${id}`,
+  WORKSPACE_WORKS: (id: string) => `/dashboard/account/${id}/works`,
+  WORKSPACE_TRACKS: (id: string) => `/dashboard/account/${id}/tracks`,
+  WORKSPACE_PAYEES: (id: string) => `/dashboard/account/${id}/payees`,
+  WORKSPACE_CONTRACTS: (id: string) => `/dashboard/account/${id}/contracts`,
+  WORKSPACE_USERS: (id: string) => `/dashboard/account/${id}/users`,
+  WORKSPACE_SETTINGS: (id: string) => `/dashboard/account/${id}/settings`,
+  WORKSPACE_SECURITY: (id: string) => `/dashboard/account/${id}/security`,
 } as const;
 
 export const USER_ROLES = {
@@ -37,8 +47,10 @@ export const USER_ROLES = {
 export const API_ENDPOINTS = {
   DASHBOARD: '/api/dashboard',
   ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
+  DASHBOARD_ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
   ACCOUNTS: '/api/accounts',
   WORKS: '/api/works',
+  COMPOSERS: '/api/composers',
   TRACKS: '/api/tracks',
   PAYEES: '/api/payees',
   CONTRACTS: '/api/contracts',
@@ -49,5 +61,6 @@ export const API_ENDPOINTS = {
   ADMIN_WORKS: '/api/admin/works',
   ADMIN_TRACKS: '/api/admin/tracks',
   ADMIN_CONTRACTS: '/api/admin/contracts',
+  ADMIN_PAYEES: '/api/admin/payees',
   ADMIN_COMPOSERS: '/api/admin/composers',
 } as const;

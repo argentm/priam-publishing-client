@@ -212,7 +212,7 @@ export function UserEditor({ user, isNew = false, onClose }: UserEditorProps) {
                   type="submit" 
                   disabled={loading || !formData.email.trim() || (isNew && !formData.password.trim())}
                   className="flex-1 h-11"
-                  variant="gradient"
+                  variant="default"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? (isNew ? 'Creating...' : 'Saving...') : (isNew ? 'Create User' : 'Save Changes')}

@@ -17,7 +17,7 @@ export default function ThemePreviewPage() {
             Daring Artist Theme
           </p>
           <div className="flex gap-4 justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <Button variant="glass" size="lg">Explore Components</Button>
+            <Button variant="secondary" size="lg" className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20">Explore Components</Button>
             <Button variant="outline" size="lg" className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20">
               View Docs
             </Button>
@@ -106,7 +106,7 @@ export default function ThemePreviewPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Subtle orange gradient with minimal border for a clean, modern look.
               </p>
-              <Button variant="orange">Learn More</Button>
+              <Button variant="default">Learn More</Button>
             </CardContent>
           </Card>
 
@@ -119,7 +119,7 @@ export default function ThemePreviewPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Soft purple tones with Mercury-inspired minimalism.
               </p>
-              <Button variant="purple">Explore</Button>
+              <Button variant="secondary">Explore</Button>
             </CardContent>
           </Card>
 
@@ -132,7 +132,7 @@ export default function ThemePreviewPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Clean blue accents perfect for professional content.
               </p>
-              <Button variant="blue">Discover</Button>
+              <Button variant="outline">Discover</Button>
             </CardContent>
           </Card>
         </div>
@@ -224,18 +224,18 @@ export default function ThemePreviewPage() {
             <div>
               <p className="text-sm font-medium mb-3">Colorful Variants</p>
               <div className="flex flex-wrap gap-3">
-                <Button variant="gradient">Gradient</Button>
-                <Button variant="orange">Orange</Button>
-                <Button variant="purple">Purple</Button>
-                <Button variant="blue">Blue</Button>
+                <Button variant="default">Gradient</Button>
+                <Button variant="default">Orange</Button>
+                <Button variant="secondary">Purple</Button>
+                <Button variant="outline">Blue</Button>
               </div>
             </div>
             <div className="gradient-daring rounded-lg p-6">
               <p className="text-sm font-medium mb-3 text-white">Glass Buttons</p>
               <div className="flex flex-wrap gap-3">
-                <Button variant="glass">Glass Effect</Button>
-                <Button variant="glass" size="lg">Large Glass</Button>
-                <Button variant="glass" size="sm">Small Glass</Button>
+                <Button variant="secondary" className="bg-white/10 backdrop-blur-sm">Glass Effect</Button>
+                <Button variant="secondary" size="lg" className="bg-white/10 backdrop-blur-sm">Large Glass</Button>
+                <Button variant="secondary" size="sm" className="bg-white/10 backdrop-blur-sm">Small Glass</Button>
               </div>
             </div>
           </CardContent>
@@ -386,13 +386,13 @@ export default function ThemePreviewPage() {
             <div className="grid md:grid-cols-2 gap-2 text-sm">
               <div className="space-y-1">
                 <p><code className="bg-muted px-2 py-1 rounded">variant="default"</code> - Orange primary button</p>
-                <p><code className="bg-muted px-2 py-1 rounded">variant="gradient"</code> - Full gradient button</p>
-                <p><code className="bg-muted px-2 py-1 rounded">variant="orange"</code> - Solid orange</p>
-                <p><code className="bg-muted px-2 py-1 rounded">variant="purple"</code> - Solid purple</p>
+                <p><code className="bg-muted px-2 py-1 rounded">variant="default"</code> - Primary button</p>
+                <p><code className="bg-muted px-2 py-1 rounded">variant="default"</code> - Primary orange</p>
+                <p><code className="bg-muted px-2 py-1 rounded">variant="secondary"</code> - Secondary button</p>
               </div>
               <div className="space-y-1">
-                <p><code className="bg-muted px-2 py-1 rounded">variant="blue"</code> - Solid blue</p>
-                <p><code className="bg-muted px-2 py-1 rounded">variant="glass"</code> - Glassmorphism</p>
+                <p><code className="bg-muted px-2 py-1 rounded">variant="outline"</code> - Outline style</p>
+                <p><code className="bg-muted px-2 py-1 rounded">variant="secondary"</code> + glass classes - Glassmorphism</p>
                 <p><code className="bg-muted px-2 py-1 rounded">variant="secondary"</code> - Malibu blue</p>
                 <p><code className="bg-muted px-2 py-1 rounded">variant="outline"</code> - Bordered</p>
               </div>
@@ -443,7 +443,7 @@ export default function ThemePreviewPage() {
           <div>
             <h3 className="font-semibold mb-3 text-lg">Example Usage</h3>
             <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-xs overflow-x-auto">{`<Button variant="gradient" size="lg">
+              <pre className="text-xs overflow-x-auto">{`<Button variant="default" size="lg">
   Get Started
 </Button>
 

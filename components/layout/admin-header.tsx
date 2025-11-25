@@ -7,6 +7,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
 } from '@/components/ui/sheet';
 import type { User as UserType } from '@/lib/types';
 import { MobileAdminSidebar } from './admin-sidebar';
@@ -62,6 +63,14 @@ const pageInfoMap: Record<string, PageInfo> = {
   '/admin/contracts/new': {
     title: 'New Contract',
     description: 'Create a new contract',
+  },
+  '/admin/payees': {
+    title: 'Payees',
+    description: 'Manage all payees across all accounts',
+  },
+  '/admin/payees/new': {
+    title: 'New Payee',
+    description: 'Create a new payee',
   },
 };
 
@@ -126,7 +135,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   const breadcrumbs = getBreadcrumbs(pathname);
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-30">
+    <header className="bg-white sticky top-0 z-30">
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center">
@@ -138,6 +147,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0 border-0 ui-sidebar">
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <MobileAdminSidebar onClose={() => setMobileMenuOpen(false)} />
             </SheetContent>
           </Sheet>
