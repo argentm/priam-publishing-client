@@ -166,8 +166,7 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
-                <Table>
+              <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -228,7 +227,6 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
                     ))}
                   </TableBody>
                 </Table>
-              </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
