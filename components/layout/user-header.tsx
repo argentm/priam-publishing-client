@@ -216,13 +216,19 @@ export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderPr
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem asChild>
-                  <form action="/auth/signout" method="post" className="w-full">
-                    <button type="submit" className="flex items-center w-full text-left">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign out
-                    </button>
-                  </form>
+                <DropdownMenuItem
+                  onClick={() => {
+                    // Submit signout form programmatically
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/auth/signout';
+                    document.body.appendChild(form);
+                    form.submit();
+                  }}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
