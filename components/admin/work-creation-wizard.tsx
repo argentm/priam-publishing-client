@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { ArrowLeft, ArrowRight, Save, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Building2, CheckCircle2, XCircle, Search, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface Account {
@@ -61,6 +61,7 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
   const [step, setStep] = useState<'account' | 'basic' | 'details'>(accounts.length === 1 ? 'basic' : 'account');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountSearch, setAccountSearch] = useState('');
 
   const [formData, setFormData] = useState<WorkFormData>({
     account_id: accounts.length === 1 ? accounts[0].id : '',
@@ -72,6 +73,17 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
   });
 
   const selectedAccount = accounts.find(a => a.id === formData.account_id);
+
+  // Filter accounts based on search query
+  const filteredAccounts = useMemo(() => {
+    if (!accountSearch.trim()) return accounts;
+    const query = accountSearch.toLowerCase();
+    return accounts.filter(
+      (account) =>
+        account.name.toLowerCase().includes(query) ||
+        account.client_id?.toLowerCase().includes(query)
+    );
+  }, [accounts, accountSearch]);
 
   const updateField = <K extends keyof WorkFormData>(field: K, value: WorkFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -184,8 +196,39 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Account Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search accounts..."
+                value={accountSearch}
+                onChange={(e) => setAccountSearch(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {accountSearch && (
+                <button
+                  onClick={() => setAccountSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Search results info */}
+            {accountSearch && (
+              <p className="text-sm text-muted-foreground">
+                {filteredAccounts.length} of {accounts.length} accounts matching &quot;{accountSearch}&quot;
+              </p>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {accounts.map((account) => (
+              {filteredAccounts.length === 0 ? (
+                <div className="col-span-2 text-center py-8 text-muted-foreground">
+                  No accounts found matching &quot;{accountSearch}&quot;
+                </div>
+              ) : filteredAccounts.map((account) => (
                 <Card
                   key={account.id}
                   className={`cursor-pointer transition-all hover:shadow-md ${
@@ -215,7 +258,8 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ))
+              }
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

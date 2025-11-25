@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { WorkEditor } from '@/components/admin/work-editor';
+import { WorkEditor } from '@/components/admin/editors/work-editor';
 
 interface Work {
   id: string;

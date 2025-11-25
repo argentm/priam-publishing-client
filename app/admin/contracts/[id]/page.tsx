@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { ContractEditor } from '@/components/admin/contract-editor';
+import { ContractEditor } from '@/components/admin/editors/contract-editor';
 
 interface Contract {
   id: string;

@@ -6,8 +6,8 @@ import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Music, UserCircle, FileSignature } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { AccountEditor } from '@/components/admin/account-editor';
-import { AccountActions } from '@/components/admin/account-actions';
+import { AccountEditor } from '@/components/admin/editors/account-editor';
+import { AccountActions } from '@/components/admin/actions/account-actions';
 
 interface AccountDetails {
   id: string;

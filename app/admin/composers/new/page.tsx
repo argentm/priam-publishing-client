@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { ComposerEditor } from '@/components/admin/composer-editor';
+import { ComposerEditor } from '@/components/admin/editors/composer-editor';
 
 interface Account {
   id: string;

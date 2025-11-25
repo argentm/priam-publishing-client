@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { PayeeEditor } from '@/components/admin/payee-editor';
+import { PayeeEditor } from '@/components/admin/editors/payee-editor';
 
 interface Payee {
   id: string;

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
-import { TrackEditor } from '@/components/admin/track-editor';
+import { TrackEditor } from '@/components/admin/editors/track-editor';
 
 interface Track {
   id: string;

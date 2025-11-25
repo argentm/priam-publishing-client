@@ -10,7 +10,7 @@ import {
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS } from '@/lib/constants';
 import type { User } from '@/lib/types';
-import { UserActions } from '@/components/admin/user-actions';
+import { UserActions } from '@/components/admin/actions/user-actions';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Plus } from 'lucide-react';

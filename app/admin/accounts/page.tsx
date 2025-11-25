@@ -10,7 +10,8 @@ import {
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import Link from 'next/link';
-import { AccountActions } from '@/components/admin/account-actions';
+import { AccountActions } from '@/components/admin/actions/account-actions';
+import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
@@ -31,8 +32,21 @@ async function getAccounts(): Promise<AdminAccount[]> {
   }
 }
 
-export default async function AdminAccountsPage() {
-  const accounts = await getAccounts();
+interface PageProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function AdminAccountsPage({ searchParams }: PageProps) {
+  const { q: searchQuery } = await searchParams;
+  const allAccounts = await getAccounts();
+  
+  // Filter accounts based on search query
+  const accounts = searchQuery
+    ? allAccounts.filter((account) =>
+        account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.client_id?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allAccounts;
 
   return (
     <>
@@ -42,7 +56,9 @@ export default async function AdminAccountsPage() {
             <div>
               <CardTitle>All Accounts</CardTitle>
               <CardDescription>
-                {accounts.length} account{accounts.length !== 1 ? 's' : ''} found
+                {searchQuery
+                  ? `${accounts.length} of ${allAccounts.length} accounts matching "${searchQuery}"`
+                  : `${accounts.length} account${accounts.length !== 1 ? 's' : ''} found`}
               </CardDescription>
             </div>
             <Button asChild>
@@ -52,17 +68,26 @@ export default async function AdminAccountsPage() {
               </Link>
             </Button>
           </div>
+          <div className="pt-4">
+            <SearchInput placeholder="Search accounts..." useUrlParams />
+          </div>
         </CardHeader>
         <CardContent>
           {accounts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="mb-4">No accounts found</p>
-              <Button asChild>
-                <Link href={ROUTES.ACCOUNT_NEW} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Create Your First Account
-                </Link>
-              </Button>
+              {searchQuery ? (
+                <p>No accounts found matching &quot;{searchQuery}&quot;</p>
+              ) : (
+                <>
+                  <p className="mb-4">No accounts found</p>
+                  <Button asChild>
+                    <Link href={ROUTES.ACCOUNT_NEW} className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Create Your First Account
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <Table>

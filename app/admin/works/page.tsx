@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/table';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
-import { WorkActions } from '@/components/admin/work-actions';
+import { WorkActions } from '@/components/admin/actions/work-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
