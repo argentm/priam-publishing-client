@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, Send, CheckCircle2, XCircle, Truck, Music } from 'lucide-react';
+import { Clock, Send, CheckCircle2, XCircle, Truck, ListFilter } from 'lucide-react';
 
 export type DeliveryStatus = 'all' | 'pending' | 'submitted' | 'approved' | 'rejected' | 'delivered';
 
@@ -20,7 +20,7 @@ interface StatusOption {
 }
 
 const STATUS_OPTIONS: StatusOption[] = [
-  { value: 'all', label: 'All Statuses', icon: Music, color: 'text-foreground' },
+  { value: 'all', label: 'All Statuses', icon: ListFilter, color: 'text-muted-foreground' },
   { value: 'pending', label: 'Pending', icon: Clock, color: 'text-slate-600' },
   { value: 'submitted', label: 'Submitted', icon: Send, color: 'text-blue-600' },
   { value: 'approved', label: 'Approved', icon: CheckCircle2, color: 'text-emerald-600' },
@@ -61,8 +61,8 @@ export function StatusFilterSelect({ currentStatus, basePath }: StatusFilterSele
     <Select value={currentStatus} onValueChange={handleStatusChange}>
       <SelectTrigger className="w-[180px]">
         <div className="flex items-center gap-2">
-          <CurrentIcon className={`w-4 h-4 ${currentOption.color}`} />
-          <SelectValue placeholder="Filter by status" />
+          <CurrentIcon className={`w-4 h-4 shrink-0 ${currentOption.color}`} />
+          <span className="truncate">{currentOption.label}</span>
         </div>
       </SelectTrigger>
       <SelectContent>
