@@ -1,0 +1,142 @@
+{
+  "common": {
+    "appName": "Priam Publishing",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "clear": "Clear",
+    "filter": "Filter",
+    "actions": "Actions",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "page": "Page",
+    "of": "of",
+    "noResults": "No results found",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "auth": {
+    "login": "Log In",
+    "logout": "Log Out",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "works": "Works",
+    "tracks": "Tracks",
+    "composers": "Writers",
+    "contracts": "Contracts",
+    "payees": "Payees",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "works": {
+    "title": "Song Library",
+    "subtitle": "Manage musical works for {accountName}",
+    "yourWorks": "Your Works",
+    "newWork": "New Work",
+    "addWork": "Add Work",
+    "editWork": "Edit Work",
+    "workTitle": "Title",
+    "writers": "Writers",
+    "performers": "Performers",
+    "dateAdded": "Date Added",
+    "deliveryStatus": "Delivery Status",
+    "noWorks": "No works registered yet",
+    "noWorksDescription": "Add your first musical work to get started.",
+    "searchPlaceholder": "Search by title, ISWC...",
+    "incomplete": "Incomplete",
+    "status": {
+      "all": "All Statuses",
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "delivered": "Delivered"
+    },
+    "registered": "registered",
+    "noWriters": "No writers",
+    "noPerformers": "No performers"
+  },
+  "tracks": {
+    "title": "Recordings",
+    "subtitle": "Manage recordings/tracks for {accountName}",
+    "yourRecordings": "Your Recordings",
+    "newRecording": "New Recording",
+    "addRecording": "Add Recording",
+    "editRecording": "Edit Recording",
+    "trackTitle": "Title",
+    "artist": "Artist",
+    "isrc": "ISRC",
+    "duration": "Duration",
+    "linkedWorks": "Linked Works",
+    "noTracks": "No recordings registered yet",
+    "noTracksDescription": "Add your first recording to link with works.",
+    "searchPlaceholder": "Search by title, ISRC, artist...",
+    "filter": {
+      "all": "All Recordings",
+      "linked": "Linked to Works",
+      "unlinked": "Unlinked"
+    },
+    "linkStatus": {
+      "linked": "Linked",
+      "unlinked": "Unlinked"
+    }
+  },
+  "composers": {
+    "title": "Writers",
+    "subtitle": "Manage writers/composers for {accountName}",
+    "newWriter": "New Writer",
+    "addWriter": "Add Writer",
+    "editWriter": "Edit Writer",
+    "name": "Name",
+    "cae": "CAE/IPI",
+    "pro": "PRO",
+    "status": "Status",
+    "controlled": "Controlled",
+    "external": "External",
+    "noWriters": "No writers registered yet",
+    "filter": {
+      "all": "All Writers",
+      "controlled": "Controlled",
+      "external": "External"
+    }
+  },
+  "accounts": {
+    "title": "Artists",
+    "newArtist": "Add Artist",
+    "artistName": "Artist Name",
+    "noAccounts": "No artists yet",
+    "createFirst": "Create your first artist account to get started."
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "notFound": "Not found",
+    "unauthorized": "You are not authorized to view this page",
+    "forbidden": "Access denied",
+    "tryAgain": "Please try again"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be at most {max} characters"
+  }
+}
+
