@@ -15,12 +15,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Music, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, FileMusic } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ search?: string; page?: string }>;
+  searchParams: Promise<{ search?: string; page?: string; filter?: FilterType }>;
 }
+
+type FilterType = 'all' | 'complete' | 'incomplete';
 
 interface Work {
   id: string;
@@ -57,9 +60,22 @@ interface WorksResponse {
   total: number;
 }
 
+function getWorkStatus(work: Work): { label: string; color: string; bgColor: string } {
+  const hasWriters = work.work_composers && work.work_composers.length > 0;
+  const hasPerformers = work.work_performers && work.work_performers.length > 0;
+  
+  if (hasWriters && hasPerformers) {
+    return { label: 'Complete', color: 'text-emerald-600', bgColor: 'bg-emerald-500' };
+  }
+  if (hasWriters || hasPerformers) {
+    return { label: 'In Progress', color: 'text-amber-600', bgColor: 'bg-amber-500' };
+  }
+  return { label: 'Draft', color: 'text-slate-500', bgColor: 'bg-slate-400' };
+}
+
 export default async function WorksPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { search: searchParam, page: pageParam } = await searchParams;
+  const { search: searchParam, page: pageParam, filter: filterParam } = await searchParams;
   const supabase = await createServerClient();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -69,7 +85,9 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
   }
 
   const search = searchParam || '';
-  const page = parseInt(pageParam || '1', 10);
+  const validFilters: FilterType[] = ['all', 'complete', 'incomplete'];
+  const filter: FilterType = validFilters.includes(filterParam as FilterType) ? (filterParam as FilterType) : 'all';
+  const page = Math.max(1, parseInt(pageParam || '1', 10));
   const limit = 50;
   const offset = (page - 1) * limit;
 
@@ -107,95 +125,246 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
 
     const { account } = accountResponse;
     const { works = [], total = 0 } = worksResponse || {};
+    
+    // Client-side filter for complete/incomplete (until backend supports it)
+    const filteredWorks = filter === 'all' 
+      ? works 
+      : works.filter(work => {
+          const status = getWorkStatus(work);
+          return filter === 'complete' 
+            ? status.label === 'Complete' 
+            : status.label !== 'Complete';
+        });
+    
     const totalPages = Math.ceil(total / limit);
     const basePath = `/dashboard/account/${id}/works`;
 
+    // Helper to build filter URLs preserving search
+    const getFilterUrl = (newFilter: FilterType) => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (newFilter !== 'all') params.set('filter', newFilter);
+      const queryString = params.toString();
+      return queryString ? `${basePath}?${queryString}` : basePath;
+    };
+
     return (
       <div className="space-y-6">
-        <Card className="border-none shadow-none">
-          <CardHeader className="px-0 pt-0">
-            <div className="flex items-center justify-between">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground">Song Library</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Manage musical works for <span className="font-medium">{account.name}</span>
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl font-semibold">Works</CardTitle>
+                <CardTitle>Your Works</CardTitle>
                 <CardDescription>
-                  Filter {total} works
+                  {total} work{total !== 1 ? 's' : ''} {filter !== 'all' ? `(${filter})` : 'registered'}
                 </CardDescription>
               </div>
-              <Button asChild>
-                <Link href={`${basePath}/new`}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Work
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <form action={basePath} method="get" className="flex gap-2">
+                  <input type="hidden" name="filter" value={filter} />
+                  <Input
+                    name="search"
+                    placeholder="Search by title, ISWC..."
+                    defaultValue={search}
+                    className="w-full sm:w-64"
+                  />
+                  <Button type="submit" variant="outline" size="icon">
+                    <Search className="w-4 h-4" />
+                  </Button>
+                  {search && (
+                    <Button type="button" variant="ghost" asChild>
+                      <Link href={getFilterUrl(filter)}>Clear</Link>
+                    </Button>
+                  )}
+                </form>
+                <Button asChild>
+                  <Link href={`${basePath}/new`}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Work
+                  </Link>
+                </Button>
+              </div>
             </div>
-            <div className="mt-4">
-              <form action={basePath} method="get" className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  name="search"
-                  placeholder="Search works..."
-                  defaultValue={search}
-                  className="w-full pl-9 bg-muted/50 border-none h-10"
-                />
-              </form>
+            
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 mt-4 border-b">
+              <Link
+                href={getFilterUrl('all')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                  filter === 'all'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <Music className="w-4 h-4 inline-block mr-2" />
+                All Works
+              </Link>
+              <Link
+                href={getFilterUrl('complete')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                  filter === 'complete'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <FileMusic className="w-4 h-4 inline-block mr-2" />
+                Complete
+              </Link>
+              <Link
+                href={getFilterUrl('incomplete')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                  filter === 'incomplete'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <FileMusic className="w-4 h-4 inline-block mr-2" />
+                Incomplete
+              </Link>
             </div>
           </CardHeader>
-          <CardContent className="px-0">
-            {works.length === 0 ? (
-              <div className="py-8 border-t">
-                <p className="text-sm font-medium">There are no works.</p>
+          <CardContent>
+            {filteredWorks.length === 0 ? (
+              <div className="text-center py-12">
+                <Music className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">
+                  {search 
+                    ? 'No works found' 
+                    : filter !== 'all' 
+                      ? `No ${filter} works` 
+                      : 'No works registered yet'}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {search
+                    ? 'Try adjusting your search terms'
+                    : filter !== 'all'
+                      ? `No works match the "${filter}" filter.`
+                      : 'Add your first musical work to get started.'}
+                </p>
+                {!search && filter === 'all' && (
+                  <Button asChild>
+                    <Link href={`${basePath}/new`}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Work
+                    </Link>
+                  </Button>
+                )}
               </div>
             ) : (
               <>
                 <Table>
                   <TableHeader>
                     <TableRow className="uppercase text-xs hover:bg-transparent">
-                      <TableHead className="font-semibold text-muted-foreground">Work Title</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Performers</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Date Added</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Title</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Writers</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Performers</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Date Added</TableHead>
                       <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {works.map((work) => (
-                      <TableRow key={work.id} className="border-b hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          <Link href={`${basePath}/${work.id}`} className="hover:underline decoration-primary decoration-2 underline-offset-4">
-                            {work.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {work.work_performers?.length > 0 
-                            ? work.work_performers.map(p => p.performer_name).join(', ')
-                            : <span className="text-muted-foreground/50">—</span>
-                          }
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm uppercase">
-                          {new Date(work.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {work.work_composers?.length > 0
-                            ? work.work_composers.map(c => c.composer?.name).filter(Boolean).join(', ')
-                            : <span className="text-muted-foreground/50">—</span>
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {/* Status Logic placeholder */}
-                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                            <span className="text-sm text-muted-foreground">Active</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive">
-                            <span className="sr-only">Delete</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredWorks.map((work) => {
+                      const status = getWorkStatus(work);
+                      const writersCount = work.work_composers?.length || 0;
+                      const performersCount = work.work_performers?.length || 0;
+                      
+                      return (
+                        <TableRow key={work.id} className="group hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Music className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <Link 
+                                  href={`${basePath}/${work.id}`} 
+                                  className="font-medium hover:text-primary transition-colors line-clamp-1"
+                                >
+                                  {work.title}
+                                </Link>
+                                {work.iswc && (
+                                  <div className="text-xs text-muted-foreground font-mono">
+                                    ISWC: {work.iswc}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {writersCount > 0 ? (
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 text-sm">
+                                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span className="text-muted-foreground">
+                                    {work.work_composers.slice(0, 2).map(c => c.composer?.name).filter(Boolean).join(', ')}
+                                    {writersCount > 2 && <span className="text-muted-foreground/60"> +{writersCount - 2}</span>}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/40 text-sm">No writers</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {performersCount > 0 ? (
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 text-sm">
+                                  <Mic2 className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span className="text-muted-foreground">
+                                    {work.work_performers.slice(0, 2).map(p => p.performer_name).join(', ')}
+                                    {performersCount > 2 && <span className="text-muted-foreground/60"> +{performersCount - 2}</span>}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/40 text-sm">No performers</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className={cn("w-2 h-2 rounded-full", status.bgColor)} />
+                              <span className={cn("text-sm font-medium", status.color)}>
+                                {status.label}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(work.created_at).toLocaleDateString('en-GB', { 
+                              day: '2-digit', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`${basePath}/${work.id}`}>Edit</Link>
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 {totalPages > 1 && (
@@ -209,6 +378,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                           <Link
                             href={`${basePath}?${new URLSearchParams({
                               ...(search && { search }),
+                              ...(filter !== 'all' && { filter }),
                               page: (page - 1).toString(),
                             }).toString()}`}
                           >
@@ -222,6 +392,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                           <Link
                             href={`${basePath}?${new URLSearchParams({
                               ...(search && { search }),
+                              ...(filter !== 'all' && { filter }),
                               page: (page + 1).toString(),
                             }).toString()}`}
                           >
