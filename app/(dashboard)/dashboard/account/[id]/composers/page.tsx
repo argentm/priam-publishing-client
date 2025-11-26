@@ -12,9 +12,10 @@ import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ChevronLeft, ChevronRight, Plus, UserCircle, CheckCircle2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Plus, UserCircle, CheckCircle2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 interface Composer {
   id: string;
@@ -44,6 +45,7 @@ interface AccountResponse {
 async function getComposers(
   accountId: string,
   search?: string,
+  controlled?: string,
   limit = 50,
   offset = 0
 ): Promise<ComposersResponse> {
@@ -55,6 +57,9 @@ async function getComposers(
     });
     if (search) {
       params.append('search', search);
+    }
+    if (controlled) {
+      params.append('controlled', controlled);
     }
     return await client.get<ComposersResponse>(
       `${API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId)}?${params.toString()}`
@@ -74,14 +79,16 @@ async function getAccount(accountId: string): Promise<Account | null> {
   }
 }
 
+type FilterType = 'all' | 'controlled' | 'external';
+
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ search?: string; page?: string }>;
+  searchParams: Promise<{ search?: string; page?: string; filter?: FilterType }>;
 }
 
 export default async function ComposersPage({ params, searchParams }: PageProps) {
   const { id: accountId } = await params;
-  const { search: searchParam, page: pageParam } = await searchParams;
+  const { search: searchParam, page: pageParam, filter: filterParam } = await searchParams;
   
   const account = await getAccount(accountId);
   
@@ -90,14 +97,29 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
   }
   
   const search = searchParam || '';
-  const page = parseInt(pageParam || '1', 10);
+  // Validate filter to prevent unexpected values
+  const validFilters: FilterType[] = ['all', 'controlled', 'external'];
+  const filter: FilterType = validFilters.includes(filterParam as FilterType) ? (filterParam as FilterType) : 'all';
+  const page = Math.max(1, parseInt(pageParam || '1', 10)); // Ensure page is at least 1
   const limit = 50;
   const offset = (page - 1) * limit;
 
-  const { composers, total } = await getComposers(accountId, search, limit, offset);
+  // Map filter to controlled query param
+  const controlledParam = filter === 'controlled' ? 'true' : filter === 'external' ? 'false' : undefined;
+
+  const { composers, total } = await getComposers(accountId, search, controlledParam, limit, offset);
   const totalPages = Math.ceil(total / limit);
 
   const basePath = `/dashboard/account/${accountId}/composers`;
+  
+  // Helper to build filter URLs preserving search
+  const getFilterUrl = (newFilter: FilterType) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (newFilter !== 'all') params.set('filter', newFilter);
+    const queryString = params.toString();
+    return queryString ? `${basePath}?${queryString}` : basePath;
+  };
 
   return (
     <>
@@ -114,11 +136,12 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
             <div>
               <CardTitle>Your Composers</CardTitle>
               <CardDescription>
-                {total} composer{total !== 1 ? 's' : ''} registered
+                {total} composer{total !== 1 ? 's' : ''} {filter !== 'all' ? `(${filter})` : 'registered'}
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <form action={basePath} method="get" className="flex gap-2">
+                <input type="hidden" name="filter" value={filter} />
                 <Input
                   name="search"
                   placeholder="Search by name, CAE..."
@@ -130,7 +153,7 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
                 </Button>
                 {search && (
                   <Button type="button" variant="ghost" asChild>
-                    <Link href={basePath}>Clear</Link>
+                    <Link href={getFilterUrl(filter)}>Clear</Link>
                   </Button>
                 )}
               </form>
@@ -142,20 +165,66 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
               </Button>
             </div>
           </div>
+          
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1 mt-4 border-b">
+            <Link
+              href={getFilterUrl('all')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                filter === 'all'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+              )}
+            >
+              <Users className="w-4 h-4 inline-block mr-2" />
+              All Writers
+            </Link>
+            <Link
+              href={getFilterUrl('controlled')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                filter === 'controlled'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+              )}
+            >
+              <CheckCircle2 className="w-4 h-4 inline-block mr-2" />
+              Controlled
+            </Link>
+            <Link
+              href={getFilterUrl('external')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                filter === 'external'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+              )}
+            >
+              <UserCircle className="w-4 h-4 inline-block mr-2" />
+              External
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           {composers.length === 0 ? (
             <div className="text-center py-12">
               <UserCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="font-semibold mb-2">
-                {search ? 'No composers found' : 'No composers registered yet'}
+                {search 
+                  ? 'No composers found' 
+                  : filter !== 'all' 
+                    ? `No ${filter} composers` 
+                    : 'No composers registered yet'}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 {search
                   ? 'Try adjusting your search terms'
-                  : 'Add your first composer to start registering works.'}
+                  : filter !== 'all'
+                    ? `No ${filter} writers match your criteria. Try a different filter.`
+                    : 'Add your first composer to start registering works.'}
               </p>
-              {!search && (
+              {!search && filter === 'all' && (
                 <Button asChild>
                   <Link href={ROUTES.WORKSPACE_COMPOSERS_NEW(accountId)}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -238,6 +307,7 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
                         <Link
                           href={`${basePath}?${new URLSearchParams({
                             ...(search && { search }),
+                            ...(filter !== 'all' && { filter }),
                             page: (page - 1).toString(),
                           }).toString()}`}
                         >
@@ -251,6 +321,7 @@ export default async function ComposersPage({ params, searchParams }: PageProps)
                         <Link
                           href={`${basePath}?${new URLSearchParams({
                             ...(search && { search }),
+                            ...(filter !== 'all' && { filter }),
                             page: (page + 1).toString(),
                           }).toString()}`}
                         >

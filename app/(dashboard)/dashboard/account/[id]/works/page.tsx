@@ -33,6 +33,14 @@ interface Work {
   approval_status?: string;
   created_at: string;
   updated_at: string;
+  work_composers: {
+    composer: {
+      name: string;
+    } | null;
+  }[];
+  work_performers: {
+    performer_name: string;
+  }[];
 }
 
 interface Account {
@@ -80,11 +88,20 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
 
     // Fetch account and works in parallel
     const [accountResponse, worksResponse] = await Promise.all([
-      apiClient.get<DashboardAccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(id)),
-      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?${queryParams.toString()}`),
+      apiClient.get<DashboardAccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(id))
+        .catch(err => {
+          console.error('Error fetching account:', err);
+          return null;
+        }),
+      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?${queryParams.toString()}`)
+        .catch(err => {
+          console.error('Error fetching works:', err);
+          return { works: [], total: 0 };
+        }),
     ]);
 
     if (!accountResponse?.account) {
+      console.error('Account not found or access denied');
       redirect('/dashboard');
     }
 
@@ -95,142 +112,94 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
 
     return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Works</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage musical works for <span className="font-medium">{account.name}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Works Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <Card className="border-none shadow-none">
+          <CardHeader className="px-0 pt-0">
+            <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Your Works</CardTitle>
+                <CardTitle className="text-xl font-semibold">Works</CardTitle>
                 <CardDescription>
-                  {total} work{total !== 1 ? 's' : ''} registered
+                  Filter {total} works
                 </CardDescription>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <form action={basePath} method="get" className="flex gap-2">
-                  <Input
-                    name="search"
-                    placeholder="Search by title, ISWC..."
-                    defaultValue={search}
-                    className="w-full sm:w-64"
-                  />
-                  <Button type="submit" variant="outline" size="icon">
-                    <Search className="w-4 h-4" />
-                  </Button>
-                  {search && (
-                    <Button type="button" variant="ghost" asChild>
-                      <Link href={basePath}>Clear</Link>
-                    </Button>
-                  )}
-                </form>
-                <Button asChild>
-                  <Link href={ROUTES.ACCOUNT_WORKS_NEW(id)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Work
-                  </Link>
-                </Button>
-              </div>
+              <Button asChild>
+                <Link href={`${basePath}/new`}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Work
+                </Link>
+              </Button>
+            </div>
+            <div className="mt-4">
+              <form action={basePath} method="get" className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  name="search"
+                  placeholder="Search works..."
+                  defaultValue={search}
+                  className="w-full pl-9 bg-muted/50 border-none h-10"
+                />
+              </form>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0">
             {works.length === 0 ? (
-              <div className="text-center py-12">
-                <Music className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">
-                  {search ? 'No works found' : 'No works registered yet'}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {search
-                    ? 'Try adjusting your search terms'
-                    : 'Register your first work to start managing your publishing rights.'}
-                </p>
-                {!search && (
-                  <Button asChild>
-                    <Link href={ROUTES.ACCOUNT_WORKS_NEW(id)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Register Work
-                    </Link>
-                  </Button>
-                )}
+              <div className="py-8 border-t">
+                <p className="text-sm font-medium">There are no works.</p>
               </div>
             ) : (
               <>
                 <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>ISWC</TableHead>
-                        <TableHead>Tunecode</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                  <TableHeader>
+                    <TableRow className="uppercase text-xs hover:bg-transparent">
+                      <TableHead className="font-semibold text-muted-foreground">Work Title</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Performers</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Date Added</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Writers</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {works.map((work) => (
+                      <TableRow key={work.id} className="border-b hover:bg-muted/50">
+                        <TableCell className="font-medium">
+                          <Link href={`${basePath}/${work.id}`} className="hover:underline decoration-primary decoration-2 underline-offset-4">
+                            {work.title}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {work.work_performers?.length > 0 
+                            ? work.work_performers.map(p => p.performer_name).join(', ')
+                            : <span className="text-muted-foreground/50">—</span>
+                          }
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm uppercase">
+                          {new Date(work.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {work.work_composers?.length > 0
+                            ? work.work_composers.map(c => c.composer?.name).filter(Boolean).join(', ')
+                            : <span className="text-muted-foreground/50">—</span>
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {/* Status Logic placeholder */}
+                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span className="text-sm text-muted-foreground">Active</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive">
+                            <span className="sr-only">Delete</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {works.map((work) => (
-                        <TableRow key={work.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Music className="w-4 h-4 text-primary" />
-                              </div>
-                              <div>
-                                <div className="font-medium">{work.title}</div>
-                                <div className="flex gap-1 mt-0.5">
-                                  {work.priority && (
-                                    <Badge variant="default" className="text-[10px] px-1 py-0">Priority</Badge>
-                                  )}
-                                  {work.production_library && (
-                                    <Badge variant="secondary" className="text-[10px] px-1 py-0">Library</Badge>
-                                  )}
-                                  {work.grand_rights && (
-                                    <Badge variant="outline" className="text-[10px] px-1 py-0">Grand Rights</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {work.iswc || <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {work.tunecode || <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            {work.approval_status ? (
-                              <Badge 
-                                variant={work.approval_status === 'Approved' ? 'default' : 
-                                        work.approval_status === 'Pending' ? 'secondary' : 'outline'}
-                              >
-                                {work.approval_status}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Draft</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(work.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`${basePath}/${work.id}`}>Edit</Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                    ))}
+                  </TableBody>
+                </Table>
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
                     <div className="text-sm text-muted-foreground">
                       Page {page} of {totalPages}
                     </div>
@@ -243,7 +212,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                               page: (page - 1).toString(),
                             }).toString()}`}
                           >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="w-4 h-4 mr-1" />
                             Previous
                           </Link>
                         </Button>
@@ -257,7 +226,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                             }).toString()}`}
                           >
                             Next
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4 ml-1" />
                           </Link>
                         </Button>
                       )}

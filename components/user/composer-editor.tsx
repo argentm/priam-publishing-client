@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,35 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Save, Trash2, ArrowLeft, CheckCircle2, XCircle, UserCircle } from 'lucide-react';
-import Link from 'next/link';
+import { PRO_LIST } from '@/lib/constants/pros';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Save, 
+  CheckCircle2, 
+  XCircle, 
+  Plus, 
+  Trash2, 
+  UserCircle, 
+  Music, 
+  AlertCircle, 
+  Check,
+  ChevronsUpDown
+} from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 interface Composer {
   id: string;
@@ -57,6 +85,8 @@ export function UserComposerEditor({
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
   const [apiClient, setApiClient] = useState<ApiClient | null>(null);
+
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const initClient = async () => {
@@ -293,12 +323,51 @@ export function UserComposerEditor({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="main_pro">Main PRO</Label>
-                <Input
-                  id="main_pro"
-                  value={composer.main_pro || ''}
-                  onChange={(e) => updateField('main_pro', e.target.value || null)}
-                  placeholder="e.g., PRS, ASCAP, BMI"
-                />
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between"
+                    >
+                      {composer.main_pro
+                        ? PRO_LIST.find((pro) => pro.value === composer.main_pro)?.label || composer.main_pro
+                        : "Select PRO..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search PRO..." />
+                      <CommandList>
+                        <CommandEmpty>No PRO found.</CommandEmpty>
+                        <CommandGroup>
+                          {PRO_LIST.map((pro) => (
+                            <CommandItem
+                              key={pro.value || 'no-pro'}
+                              value={pro.label}
+                              onSelect={(currentValue) => {
+                                const selected = PRO_LIST.find(item => item.label.toLowerCase() === currentValue.toLowerCase());
+                                // Store the value (uppercase enum) or null for "No PRO"
+                                updateField('main_pro', selected?.value || null);
+                                setOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  composer.main_pro === pro.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {pro.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="main_pro_identifier">PRO Member ID</Label>

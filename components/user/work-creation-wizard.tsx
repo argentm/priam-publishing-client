@@ -138,7 +138,7 @@ export function WorkCreationWizard({ accountId, accountName }: WorkCreationWizar
       setLoadingComposers(true);
       try {
         const response = await apiClient.get<{ composers: Composer[]; total: number }>(
-          `${API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)}/composers?limit=100`
+          `${API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId)}?limit=100`
         );
         setExistingComposers(response.composers || []);
       } catch (err) {
@@ -254,7 +254,7 @@ export function WorkCreationWizard({ accountId, accountName }: WorkCreationWizar
         if (writer.isNew) {
           // Create new composer using user-facing endpoint
           const composerResponse = await apiClient.post<{ composer: Composer }>(
-            `${API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)}/composers`,
+            API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId),
             {
               name: writer.name,
               first_name: writer.firstName || null,

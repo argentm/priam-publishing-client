@@ -12,7 +12,6 @@ import { ROUTES } from '@/lib/constants';
 
 export default function NewAccountPage() {
   const [name, setName] = useState('');
-  const [clientId, setClientId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -40,7 +39,6 @@ export default function NewAccountPage() {
         '/api/accounts',
         {
           name,
-          client_id: clientId || undefined,
         }
       );
 
@@ -61,9 +59,9 @@ export default function NewAccountPage() {
     <div className="container mx-auto py-8 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Create New Account</CardTitle>
+          <CardTitle>Add Artist</CardTitle>
           <CardDescription>
-            Create a new publishing account to manage your works, tracks, and contracts
+            Add a new artist to your account to manage their works, tracks, and contracts
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,12 +74,12 @@ export default function NewAccountPage() {
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Account Name <span className="text-destructive">*</span>
+                Artist Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Enter account name"
+                placeholder="Enter artist name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -89,24 +87,9 @@ export default function NewAccountPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="clientId">Client ID (Optional)</Label>
-              <Input
-                id="clientId"
-                type="text"
-                placeholder="Enter client ID"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                disabled={loading}
-              />
-              <p className="text-sm text-muted-foreground">
-                An optional identifier for external systems
-              </p>
-            </div>
-
             <div className="flex gap-4">
               <Button type="submit" disabled={loading || !name.trim()}>
-                {loading ? 'Creating...' : 'Create Account'}
+                {loading ? 'Adding...' : 'Add Artist'}
               </Button>
               <Button
                 type="button"

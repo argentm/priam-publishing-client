@@ -14,10 +14,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Shield, Plus, Edit, Search, Users } from 'lucide-react';
+import { Shield, Plus, Edit, Search, Users, Ban } from 'lucide-react';
 import type { User } from '@/lib/types';
-import { UserActions } from './user-actions';
-import { UserEditor } from './user-editor';
+import { UserActions } from './actions/user-actions';
+import { UserEditor } from './editors/user-editor';
 
 interface UsersPageClientProps {
   users: User[];
@@ -199,28 +199,35 @@ export function UsersPageClient({
                           <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Created</TableHead>
-                            <TableHead>Updated</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredNormalUsers.map((user) => (
-                            <TableRow key={user.id}>
+                            <TableRow key={user.id} className={user.suspended ? 'opacity-60' : ''}>
                               <TableCell className="font-medium">
                                 {user.full_name || (
                                   <span className="text-muted-foreground italic">No name</span>
                                 )}
                               </TableCell>
                               <TableCell>{user.email}</TableCell>
+                              <TableCell>
+                                {user.suspended ? (
+                                  <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                                    <Ban className="w-3 h-3" />
+                                    Suspended
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-green-600 border-green-600">
+                                    Active
+                                  </Badge>
+                                )}
+                              </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {user.created_at
                                   ? new Date(user.created_at).toLocaleDateString()
-                                  : 'N/A'}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {user.updated_at
-                                  ? new Date(user.updated_at).toLocaleDateString()
                                   : 'N/A'}
                               </TableCell>
                               <TableCell className="text-right">
@@ -336,28 +343,35 @@ export function UsersPageClient({
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
-                      <TableHead>Updated</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredNormalUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow key={user.id} className={user.suspended ? 'opacity-60' : ''}>
                         <TableCell className="font-medium">
                           {user.full_name || (
                             <span className="text-muted-foreground italic">No name</span>
                           )}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.suspended ? (
+                            <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                              <Ban className="w-3 h-3" />
+                              Suspended
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              Active
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {user.created_at
                             ? new Date(user.created_at).toLocaleDateString()
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.updated_at
-                            ? new Date(user.updated_at).toLocaleDateString()
                             : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">

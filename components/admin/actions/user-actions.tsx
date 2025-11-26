@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { API_ENDPOINTS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@/lib/types';
-import { Edit, Trash2, Shield, ShieldOff } from 'lucide-react';
+import { Trash2, Ban, CheckCircle } from 'lucide-react';
 
 interface UserActionsProps {
   user: User;
@@ -16,12 +16,16 @@ interface UserActionsProps {
 export function UserActions({ user, currentUserId }: UserActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [action, setAction] = useState<string | null>(null);
 
-  const handleToggleAdmin = async () => {
+  const handleToggleSuspend = async () => {
     if (loading) return;
+    
+    const action = user.suspended ? 'unsuspend' : 'suspend';
+    if (!confirm(`Are you sure you want to ${action} user ${user.email}?`)) {
+      return;
+    }
+
     setLoading(true);
-    setAction('toggle-admin');
 
     try {
       const supabase = createClient();
@@ -30,16 +34,15 @@ export function UserActions({ user, currentUserId }: UserActionsProps) {
       const client = new ApiClient(async () => session?.access_token || null);
 
       await client.put(API_ENDPOINTS.ADMIN_USERS + `/${user.id}`, {
-        is_admin: !user.is_admin,
+        suspended: !user.suspended,
       });
 
       router.refresh();
     } catch (error) {
-      console.error('Error toggling admin status:', error);
-      alert('Failed to update admin status');
+      console.error('Error toggling suspend status:', error);
+      alert(`Failed to ${action} user`);
     } finally {
       setLoading(false);
-      setAction(null);
     }
   };
 
@@ -50,7 +53,6 @@ export function UserActions({ user, currentUserId }: UserActionsProps) {
     }
 
     setLoading(true);
-    setAction('delete');
 
     try {
       const supabase = createClient();
@@ -66,38 +68,48 @@ export function UserActions({ user, currentUserId }: UserActionsProps) {
       alert('Failed to delete user');
     } finally {
       setLoading(false);
-      setAction(null);
     }
   };
 
   const isCurrentUser = user.id === currentUserId;
   const isAdmin = user.is_admin === true;
+  const isSuspended = user.suspended === true;
+
+  // Don't show suspend option for admins or current user
+  if (isAdmin || isCurrentUser) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-end space-x-2">
       <Button
-        variant="outline"
+        variant={isSuspended ? 'outline' : 'secondary'}
         size="sm"
-        onClick={handleToggleAdmin}
-        disabled={loading || isCurrentUser}
-        title={isCurrentUser ? 'Cannot change your own admin status' : isAdmin ? 'Remove admin privileges' : 'Grant admin privileges'}
+        onClick={handleToggleSuspend}
+        disabled={loading}
+        title={isSuspended ? 'Unsuspend user' : 'Suspend user'}
       >
-        {isAdmin ? (
-          <ShieldOff className="w-4 h-4" />
+        {isSuspended ? (
+          <>
+            <CheckCircle className="w-4 h-4 mr-1" />
+            Unsuspend
+          </>
         ) : (
-          <Shield className="w-4 h-4" />
+          <>
+            <Ban className="w-4 h-4 mr-1" />
+            Suspend
+          </>
         )}
       </Button>
       <Button
         variant="destructive"
         size="sm"
         onClick={handleDelete}
-        disabled={loading || isCurrentUser}
-        title={isCurrentUser ? 'Cannot delete your own account' : 'Delete user'}
+        disabled={loading}
+        title="Delete user"
       >
         <Trash2 className="w-4 h-4" />
       </Button>
     </div>
   );
 }
-

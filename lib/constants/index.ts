@@ -38,6 +38,7 @@ export const ROUTES = {
   WORKSPACE_SECURITY: (id: string) => `/dashboard/account/${id}/security`,
   WORKSPACE_COMPOSERS: (id: string) => `/dashboard/account/${id}/composers`,
   WORKSPACE_COMPOSERS_NEW: (id: string) => `/dashboard/account/${id}/composers/new`,
+  WORKSPACE_TRACKS_NEW: (id: string) => `/dashboard/account/${id}/tracks/new`,
 } as const;
 
 export const USER_ROLES = {
@@ -50,7 +51,8 @@ export const API_ENDPOINTS = {
   DASHBOARD: '/api/dashboard',
   ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
   DASHBOARD_ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
-  DASHBOARD_COMPOSERS: (accountId: string) => `/api/dashboard/account/${accountId}/composers`,
+  DASHBOARD_COMPOSERS: (accountId: string) => `/api/accounts/${accountId}/composers`,
+  DASHBOARD_TRACKS: (accountId: string) => `/api/accounts/${accountId}/tracks`,
   ACCOUNTS: '/api/accounts',
   WORKS: '/api/works',
   COMPOSERS: '/api/composers',
@@ -66,4 +68,6 @@ export const API_ENDPOINTS = {
   ADMIN_CONTRACTS: '/api/admin/contracts',
   ADMIN_PAYEES: '/api/admin/payees',
   ADMIN_COMPOSERS: '/api/admin/composers',
+  VERIFICATION_CREATE_SESSION: '/api/verification/create-session',
+  VERIFICATION_STATUS: '/api/verification/status',
 } as const;
