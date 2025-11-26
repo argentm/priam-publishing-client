@@ -15,15 +15,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, FileMusic } from 'lucide-react';
+import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, Clock, Send, CheckCircle2, XCircle, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ search?: string; page?: string; filter?: FilterType }>;
+  searchParams: Promise<{ search?: string; page?: string; status?: DeliveryStatus }>;
 }
 
-type FilterType = 'all' | 'complete' | 'incomplete';
+// Delivery Status workflow: pending → submitted → approved/rejected → delivered
+type DeliveryStatus = 'all' | 'pending' | 'submitted' | 'approved' | 'rejected' | 'delivered';
 
 interface Work {
   id: string;
@@ -33,7 +34,7 @@ interface Work {
   priority?: boolean;
   production_library?: boolean;
   grand_rights?: boolean;
-  approval_status?: string;
+  delivery_status?: DeliveryStatus; // The actual delivery workflow status
   created_at: string;
   updated_at: string;
   work_composers: {
@@ -60,22 +61,67 @@ interface WorksResponse {
   total: number;
 }
 
-function getWorkStatus(work: Work): { label: string; color: string; bgColor: string } {
+// Delivery status configuration
+const DELIVERY_STATUS_CONFIG: Record<string, { 
+  label: string; 
+  color: string; 
+  bgColor: string; 
+  icon: typeof Clock;
+  description: string;
+}> = {
+  pending: { 
+    label: 'Pending', 
+    color: 'text-slate-600', 
+    bgColor: 'bg-slate-500',
+    icon: Clock,
+    description: 'Awaiting submission'
+  },
+  submitted: { 
+    label: 'Submitted', 
+    color: 'text-blue-600', 
+    bgColor: 'bg-blue-500',
+    icon: Send,
+    description: 'Under admin review'
+  },
+  approved: { 
+    label: 'Approved', 
+    color: 'text-emerald-600', 
+    bgColor: 'bg-emerald-500',
+    icon: CheckCircle2,
+    description: 'Ready for delivery'
+  },
+  rejected: { 
+    label: 'Rejected', 
+    color: 'text-red-600', 
+    bgColor: 'bg-red-500',
+    icon: XCircle,
+    description: 'Needs revision'
+  },
+  delivered: { 
+    label: 'Delivered', 
+    color: 'text-purple-600', 
+    bgColor: 'bg-purple-500',
+    icon: Truck,
+    description: 'Sent to PROs'
+  },
+};
+
+function getDeliveryStatus(work: Work) {
+  const status = work.delivery_status || 'pending';
+  return DELIVERY_STATUS_CONFIG[status] || DELIVERY_STATUS_CONFIG.pending;
+}
+
+// Check if work is complete (has required fields)
+function isWorkComplete(work: Work): boolean {
+  const hasTitle = !!work.title?.trim();
   const hasWriters = work.work_composers && work.work_composers.length > 0;
-  const hasPerformers = work.work_performers && work.work_performers.length > 0;
-  
-  if (hasWriters && hasPerformers) {
-    return { label: 'Complete', color: 'text-emerald-600', bgColor: 'bg-emerald-500' };
-  }
-  if (hasWriters || hasPerformers) {
-    return { label: 'In Progress', color: 'text-amber-600', bgColor: 'bg-amber-500' };
-  }
-  return { label: 'Draft', color: 'text-slate-500', bgColor: 'bg-slate-400' };
+  // Performers are optional for now
+  return hasTitle && hasWriters;
 }
 
 export default async function WorksPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { search: searchParam, page: pageParam, filter: filterParam } = await searchParams;
+  const { search: searchParam, page: pageParam, status: statusParam } = await searchParams;
   const supabase = await createServerClient();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -85,8 +131,8 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
   }
 
   const search = searchParam || '';
-  const validFilters: FilterType[] = ['all', 'complete', 'incomplete'];
-  const filter: FilterType = validFilters.includes(filterParam as FilterType) ? (filterParam as FilterType) : 'all';
+  const validStatuses: DeliveryStatus[] = ['all', 'pending', 'submitted', 'approved', 'rejected', 'delivered'];
+  const statusFilter: DeliveryStatus = validStatuses.includes(statusParam as DeliveryStatus) ? (statusParam as DeliveryStatus) : 'all';
   const page = Math.max(1, parseInt(pageParam || '1', 10));
   const limit = 50;
   const offset = (page - 1) * limit;
@@ -103,6 +149,10 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
     if (search) {
       queryParams.append('search', search);
     }
+    // TODO: Add delivery_status filter to backend when ready
+    // if (statusFilter !== 'all') {
+    //   queryParams.append('delivery_status', statusFilter);
+    // }
 
     // Fetch account and works in parallel
     const [accountResponse, worksResponse] = await Promise.all([
@@ -126,24 +176,19 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
     const { account } = accountResponse;
     const { works = [], total = 0 } = worksResponse || {};
     
-    // Client-side filter for complete/incomplete (until backend supports it)
-    const filteredWorks = filter === 'all' 
+    // Client-side filter by delivery status (until backend supports it)
+    const filteredWorks = statusFilter === 'all' 
       ? works 
-      : works.filter(work => {
-          const status = getWorkStatus(work);
-          return filter === 'complete' 
-            ? status.label === 'Complete' 
-            : status.label !== 'Complete';
-        });
+      : works.filter(work => (work.delivery_status || 'pending') === statusFilter);
     
     const totalPages = Math.ceil(total / limit);
     const basePath = `/dashboard/account/${id}/works`;
 
     // Helper to build filter URLs preserving search
-    const getFilterUrl = (newFilter: FilterType) => {
+    const getStatusUrl = (newStatus: DeliveryStatus) => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (newFilter !== 'all') params.set('filter', newFilter);
+      if (newStatus !== 'all') params.set('status', newStatus);
       const queryString = params.toString();
       return queryString ? `${basePath}?${queryString}` : basePath;
     };
@@ -164,12 +209,12 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
               <div>
                 <CardTitle>Your Works</CardTitle>
                 <CardDescription>
-                  {total} work{total !== 1 ? 's' : ''} {filter !== 'all' ? `(${filter})` : 'registered'}
+                  {total} work{total !== 1 ? 's' : ''} {statusFilter !== 'all' ? `(${statusFilter})` : 'registered'}
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <form action={basePath} method="get" className="flex gap-2">
-                  <input type="hidden" name="filter" value={filter} />
+                  <input type="hidden" name="status" value={statusFilter} />
                   <Input
                     name="search"
                     placeholder="Search by title, ISWC..."
@@ -181,7 +226,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                   </Button>
                   {search && (
                     <Button type="button" variant="ghost" asChild>
-                      <Link href={getFilterUrl(filter)}>Clear</Link>
+                      <Link href={getStatusUrl(statusFilter)}>Clear</Link>
                     </Button>
                   )}
                 </form>
@@ -194,43 +239,79 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
               </div>
             </div>
             
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 mt-4 border-b">
+            {/* Delivery Status Filter Tabs */}
+            <div className="flex items-center gap-1 mt-4 border-b overflow-x-auto">
               <Link
-                href={getFilterUrl('all')}
+                href={getStatusUrl('all')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  filter === 'all'
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'all'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
                 )}
               >
                 <Music className="w-4 h-4 inline-block mr-2" />
-                All Works
+                All
               </Link>
               <Link
-                href={getFilterUrl('complete')}
+                href={getStatusUrl('pending')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  filter === 'complete'
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'pending'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
                 )}
               >
-                <FileMusic className="w-4 h-4 inline-block mr-2" />
-                Complete
+                <Clock className="w-4 h-4 inline-block mr-2" />
+                Pending
               </Link>
               <Link
-                href={getFilterUrl('incomplete')}
+                href={getStatusUrl('submitted')}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  filter === 'incomplete'
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'submitted'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
                 )}
               >
-                <FileMusic className="w-4 h-4 inline-block mr-2" />
-                Incomplete
+                <Send className="w-4 h-4 inline-block mr-2" />
+                Submitted
+              </Link>
+              <Link
+                href={getStatusUrl('approved')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'approved'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <CheckCircle2 className="w-4 h-4 inline-block mr-2" />
+                Approved
+              </Link>
+              <Link
+                href={getStatusUrl('rejected')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'rejected'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <XCircle className="w-4 h-4 inline-block mr-2" />
+                Rejected
+              </Link>
+              <Link
+                href={getStatusUrl('delivered')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  statusFilter === 'delivered'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                <Truck className="w-4 h-4 inline-block mr-2" />
+                Delivered
               </Link>
             </div>
           </CardHeader>
@@ -241,18 +322,18 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                 <h3 className="font-semibold mb-2">
                   {search 
                     ? 'No works found' 
-                    : filter !== 'all' 
-                      ? `No ${filter} works` 
+                    : statusFilter !== 'all' 
+                      ? `No ${statusFilter} works` 
                       : 'No works registered yet'}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {search
                     ? 'Try adjusting your search terms'
-                    : filter !== 'all'
-                      ? `No works match the "${filter}" filter.`
+                    : statusFilter !== 'all'
+                      ? `No works with "${statusFilter}" status.`
                       : 'Add your first musical work to get started.'}
                 </p>
-                {!search && filter === 'all' && (
+                {!search && statusFilter === 'all' && (
                   <Button asChild>
                     <Link href={`${basePath}/new`}>
                       <Plus className="w-4 h-4 mr-2" />
@@ -269,16 +350,18 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                       <TableHead className="font-semibold text-muted-foreground">Title</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Writers</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Performers</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground">Delivery Status</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Date Added</TableHead>
                       <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredWorks.map((work) => {
-                      const status = getWorkStatus(work);
+                      const deliveryStatus = getDeliveryStatus(work);
+                      const StatusIcon = deliveryStatus.icon;
                       const writersCount = work.work_composers?.length || 0;
                       const performersCount = work.work_performers?.length || 0;
+                      const isComplete = isWorkComplete(work);
                       
                       return (
                         <TableRow key={work.id} className="group hover:bg-muted/50">
@@ -288,12 +371,19 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                                 <Music className="w-5 h-5 text-primary" />
                               </div>
                               <div className="min-w-0">
-                                <Link 
-                                  href={`${basePath}/${work.id}`} 
-                                  className="font-medium hover:text-primary transition-colors line-clamp-1"
-                                >
-                                  {work.title}
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                  <Link 
+                                    href={`${basePath}/${work.id}`} 
+                                    className="font-medium hover:text-primary transition-colors line-clamp-1"
+                                  >
+                                    {work.title}
+                                  </Link>
+                                  {!isComplete && (
+                                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                                      Incomplete
+                                    </Badge>
+                                  )}
+                                </div>
                                 {work.iswc && (
                                   <div className="text-xs text-muted-foreground font-mono">
                                     ISWC: {work.iswc}
@@ -314,7 +404,9 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/40 text-sm">No writers</span>
+                              <Badge variant="outline" className="text-red-500 border-red-200 text-xs">
+                                Required
+                              </Badge>
                             )}
                           </TableCell>
                           <TableCell>
@@ -329,14 +421,14 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/40 text-sm">No performers</span>
+                              <span className="text-muted-foreground/40 text-sm">—</span>
                             )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <span className={cn("w-2 h-2 rounded-full", status.bgColor)} />
-                              <span className={cn("text-sm font-medium", status.color)}>
-                                {status.label}
+                              <StatusIcon className={cn("w-4 h-4", deliveryStatus.color)} />
+                              <span className={cn("text-sm font-medium", deliveryStatus.color)}>
+                                {deliveryStatus.label}
                               </span>
                             </div>
                           </TableCell>
@@ -378,7 +470,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                           <Link
                             href={`${basePath}?${new URLSearchParams({
                               ...(search && { search }),
-                              ...(filter !== 'all' && { filter }),
+                              ...(statusFilter !== 'all' && { status: statusFilter }),
                               page: (page - 1).toString(),
                             }).toString()}`}
                           >
@@ -392,7 +484,7 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                           <Link
                             href={`${basePath}?${new URLSearchParams({
                               ...(search && { search }),
-                              ...(filter !== 'all' && { filter }),
+                              ...(statusFilter !== 'all' && { status: statusFilter }),
                               page: (page + 1).toString(),
                             }).toString()}`}
                           >
