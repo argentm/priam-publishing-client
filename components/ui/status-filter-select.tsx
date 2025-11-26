@@ -21,7 +21,7 @@ interface StatusOption {
 
 const STATUS_OPTIONS: StatusOption[] = [
   { value: 'all', label: 'All Statuses', icon: ListFilter, color: 'text-muted-foreground' },
-  { value: 'pending', label: 'Pending', icon: Clock, color: 'text-slate-600' },
+  { value: 'pending', label: 'Draft', icon: Clock, color: 'text-slate-600' },
   { value: 'submitted', label: 'Submitted', icon: Send, color: 'text-blue-600' },
   { value: 'approved', label: 'Approved', icon: CheckCircle2, color: 'text-emerald-600' },
   { value: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-red-600' },

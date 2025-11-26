@@ -69,7 +69,7 @@ const DELIVERY_STATUS_CONFIG: Record<string, {
   description: string;
 }> = {
   pending: { 
-    label: 'Pending', 
+    label: 'Draft', 
     color: 'text-slate-600', 
     bgColor: 'bg-slate-500',
     icon: Clock,
