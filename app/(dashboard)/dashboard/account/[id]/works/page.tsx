@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServerApiClient } from '@/lib/api/server-client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
@@ -15,16 +16,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { StatusFilterSelect, type DeliveryStatus } from '@/components/ui/status-filter-select';
 import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, Clock, Send, CheckCircle2, XCircle, Truck } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ search?: string; page?: string; status?: DeliveryStatus }>;
 }
-
-// Delivery Status workflow: pending → submitted → approved/rejected → delivered
-type DeliveryStatus = 'all' | 'pending' | 'submitted' | 'approved' | 'rejected' | 'delivered';
 
 interface Work {
   id: string;
@@ -184,15 +182,6 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
     const totalPages = Math.ceil(total / limit);
     const basePath = `/dashboard/account/${id}/works`;
 
-    // Helper to build filter URLs preserving search
-    const getStatusUrl = (newStatus: DeliveryStatus) => {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (newStatus !== 'all') params.set('status', newStatus);
-      const queryString = params.toString();
-      return queryString ? `${basePath}?${queryString}` : basePath;
-    };
-
     return (
       <div className="space-y-6">
         {/* Page Header */}
@@ -213,23 +202,26 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                {/* Status Filter Dropdown */}
+                <Suspense fallback={<div className="w-[180px] h-10 bg-muted animate-pulse rounded-md" />}>
+                  <StatusFilterSelect currentStatus={statusFilter} basePath={basePath} />
+                </Suspense>
+                
+                {/* Search */}
                 <form action={basePath} method="get" className="flex gap-2">
                   <input type="hidden" name="status" value={statusFilter} />
                   <Input
                     name="search"
                     placeholder="Search by title, ISWC..."
                     defaultValue={search}
-                    className="w-full sm:w-64"
+                    className="w-full sm:w-56"
                   />
                   <Button type="submit" variant="outline" size="icon">
                     <Search className="w-4 h-4" />
                   </Button>
-                  {search && (
-                    <Button type="button" variant="ghost" asChild>
-                      <Link href={getStatusUrl(statusFilter)}>Clear</Link>
-                    </Button>
-                  )}
                 </form>
+                
+                {/* New Work Button */}
                 <Button asChild>
                   <Link href={`${basePath}/new`}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -237,82 +229,6 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                   </Link>
                 </Button>
               </div>
-            </div>
-            
-            {/* Delivery Status Filter Tabs */}
-            <div className="flex items-center gap-1 mt-4 border-b overflow-x-auto">
-              <Link
-                href={getStatusUrl('all')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'all'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <Music className="w-4 h-4 inline-block mr-2" />
-                All
-              </Link>
-              <Link
-                href={getStatusUrl('pending')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'pending'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <Clock className="w-4 h-4 inline-block mr-2" />
-                Pending
-              </Link>
-              <Link
-                href={getStatusUrl('submitted')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'submitted'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <Send className="w-4 h-4 inline-block mr-2" />
-                Submitted
-              </Link>
-              <Link
-                href={getStatusUrl('approved')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'approved'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <CheckCircle2 className="w-4 h-4 inline-block mr-2" />
-                Approved
-              </Link>
-              <Link
-                href={getStatusUrl('rejected')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'rejected'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <XCircle className="w-4 h-4 inline-block mr-2" />
-                Rejected
-              </Link>
-              <Link
-                href={getStatusUrl('delivered')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                  statusFilter === 'delivered'
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                <Truck className="w-4 h-4 inline-block mr-2" />
-                Delivered
-              </Link>
             </div>
           </CardHeader>
           <CardContent>
