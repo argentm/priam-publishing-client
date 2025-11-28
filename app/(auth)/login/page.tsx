@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/lib/constants';
 import { sanitizeAuthError, getErrorMessage } from '@/lib/utils/auth-errors';
+import { inviteStorage } from '@/lib/utils/invite-storage';
 import { Music2, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -19,6 +20,12 @@ export default function LoginPage() {
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  // Clear any stale invite context when visiting login page
+  // This prevents a different user from accidentally joining an account
+  useEffect(() => {
+    inviteStorage.clear();
+  }, []);
 
   const handleSpotifySignIn = async () => {
     setSpotifyLoading(true);

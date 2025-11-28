@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Music2, Loader2, CheckCircle, XCircle, Clock, Users, Shield } from 'lucide-react';
+import { InlineSignupForm } from '@/components/invite/inline-signup-form';
 import type { AccountInvite, PermissionLevel } from '@/lib/types';
 
 interface InviteResponse {
@@ -43,6 +44,7 @@ export default function AcceptInvitePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAlreadyMember, setIsAlreadyMember] = useState(false);
 
   useEffect(() => {
     async function checkAuthAndFetchInvite() {
@@ -60,6 +62,18 @@ export default function AcceptInvitePage() {
 
         const response = await apiClient.get<InviteResponse>(API_ENDPOINTS.INVITE_BY_TOKEN(token));
         setInvite(response.invite);
+
+        // If authenticated, check if user is already a member of this account
+        if (user && response.invite?.account_id) {
+          try {
+            // Try to fetch members - if user has access, they're already a member
+            await apiClient.get(API_ENDPOINTS.ACCOUNT_MEMBERS(response.invite.account_id));
+            setIsAlreadyMember(true);
+          } catch {
+            // 403 means not a member - this is expected for new invitees
+            setIsAlreadyMember(false);
+          }
+        }
       } catch (err) {
         const apiError = err as { message?: string };
         setError(apiError.message || 'Invite not found or has expired');
@@ -87,9 +101,9 @@ export default function AcceptInvitePage() {
 
       if (response.success) {
         setAccepted(true);
-        // Redirect to the account after a brief delay
+        // Redirect directly to the new account after a brief delay
         setTimeout(() => {
-          router.push(ROUTES.ACCOUNT(response.account_id));
+          router.push(ROUTES.WORKSPACE(response.account_id));
         }, 2000);
       }
     } catch (err) {
@@ -216,9 +230,24 @@ export default function AcceptInvitePage() {
             <CardContent className="space-y-6">
               {/* Invite Status */}
               {isExpired && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm p-4 rounded-lg border border-amber-200 dark:border-amber-800 flex items-center gap-2">
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  This invite has expired. Please ask for a new invitation.
+                <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm p-4 rounded-lg border border-amber-200 dark:border-amber-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-medium">This invite has expired</span>
+                  </div>
+                  <p className="text-sm">
+                    Please contact the person who invited you to request a new invitation.
+                  </p>
+                  <div className="text-sm pt-1 border-t border-amber-200 dark:border-amber-700">
+                    <p className="text-amber-700 dark:text-amber-300">
+                      <span className="font-medium">Inviter:</span>{' '}
+                      {invite?.inviter?.full_name || invite?.inviter?.email || 'Team Member'}
+                    </p>
+                    <p className="text-amber-700 dark:text-amber-300">
+                      <span className="font-medium">Account:</span>{' '}
+                      {invite?.account?.name || 'Unknown'}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -273,9 +302,24 @@ export default function AcceptInvitePage() {
                 )}
               </div>
 
+              {/* Already a member - show shortcut to account */}
+              {isAlreadyMember && !isExpired && !isAlreadyAccepted && (
+                <div className="space-y-4 pt-2">
+                  <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-sm p-4 rounded-lg border border-green-200 dark:border-green-800 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    You&apos;re already a member of this account!
+                  </div>
+                  <Link href={ROUTES.WORKSPACE(invite?.account_id || '')} className="block">
+                    <Button className="w-full h-12">
+                      Go to {invite?.account?.name}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
               {/* Actions */}
-              {!isExpired && !isAlreadyAccepted && !isOwnInvite && (
-                <div className="space-y-3 pt-2">
+              {!isExpired && !isAlreadyAccepted && !isOwnInvite && !isAlreadyMember && (
+                <div className="space-y-4 pt-2">
                   {isAuthenticated ? (
                     <Button
                       onClick={handleAccept}
@@ -292,23 +336,29 @@ export default function AcceptInvitePage() {
                       )}
                     </Button>
                   ) : (
-                    <>
-                      <p className="text-sm text-center text-muted-foreground">
-                        Sign in or create an account to accept this invitation
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Link href={`${ROUTES.LOGIN}?redirect=/invite/${token}`}>
-                          <Button variant="outline" className="w-full">
-                            Sign In
-                          </Button>
-                        </Link>
-                        <Link href={`${ROUTES.SIGNUP}?redirect=/invite/${token}&email=${encodeURIComponent(invite?.email || '')}`}>
-                          <Button className="w-full">
-                            Sign Up
-                          </Button>
-                        </Link>
+                    <div className="space-y-4">
+                      <div className="border-t pt-4">
+                        <h3 className="font-medium text-center mb-1">Create your account</h3>
+                        <p className="text-sm text-center text-muted-foreground mb-4">
+                          Sign up to join {invite?.account?.name}
+                        </p>
+                        <InlineSignupForm
+                          inviteToken={token}
+                          inviteEmail={invite?.email || ''}
+                          accountId={invite?.account_id || ''}
+                          accountName={invite?.account?.name || ''}
+                        />
                       </div>
-                    </>
+                      <p className="text-sm text-center text-muted-foreground">
+                        Already have an account?{' '}
+                        <Link
+                          href={`${ROUTES.LOGIN}?redirect=/invite/${token}`}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          Sign in
+                        </Link>
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

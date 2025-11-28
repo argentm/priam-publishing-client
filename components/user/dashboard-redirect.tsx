@@ -28,8 +28,16 @@ export function DashboardRedirect({ accounts, onboardingStatus, children }: Dash
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    // SECURITY: Fail-closed pattern - if onboarding status is unknown (undefined),
+    // redirect to onboarding to verify. This prevents bypassing onboarding
+    // if the status fetch fails.
+    if (onboardingStatus === undefined) {
+      router.replace(ROUTES.ONBOARDING);
+      return;
+    }
+
     // Check onboarding status first - redirect to onboarding if not complete
-    if (onboardingStatus && onboardingStatus !== 'active') {
+    if (onboardingStatus !== 'active') {
       router.replace(ROUTES.ONBOARDING);
       return;
     }

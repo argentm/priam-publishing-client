@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/constants';
+import { inviteStorage, type InviteContext } from '@/lib/utils/invite-storage';
 import {
   CheckCircle2,
   Sparkles,
   ArrowRight,
+  Users,
 } from 'lucide-react';
 
 // Clear the pending email from localStorage since verification is complete
@@ -16,18 +18,24 @@ const PENDING_EMAIL_KEY = 'pendingVerificationEmail';
 
 export default function EmailVerifiedPage() {
   const router = useRouter();
+  const [inviteContext, setInviteContext] = useState<InviteContext | null>(null);
 
-  // Clear localStorage on mount
+  // Check for invite context and clear pending email on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(PENDING_EMAIL_KEY);
+      // Check if user has a pending invite
+      const context = inviteStorage.get();
+      if (context) {
+        setInviteContext(context);
+      }
     }
   }, []);
 
   const handleContinue = () => {
     // After email verification via verifyOtp, user is authenticated
-    // Redirect to dashboard - middleware will redirect to correct onboarding step
-    router.push(ROUTES.DASHBOARD);
+    // Redirect to terms page (which will then handle invite auto-accept)
+    router.push(ROUTES.ONBOARDING_TERMS);
   };
 
   return (
@@ -107,9 +115,23 @@ export default function EmailVerifiedPage() {
             </div>
 
             <div className="bg-green-50 rounded-xl p-6 space-y-4 border border-green-200">
-              <p className="text-sm text-green-800">
-                Click below to continue setting up your account.
-              </p>
+              {inviteContext ? (
+                <>
+                  <div className="flex items-center gap-2 text-green-800">
+                    <Users className="w-5 h-5" />
+                    <p className="text-sm font-medium">
+                      You&apos;re joining {inviteContext.accountName}
+                    </p>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Click below to accept the Terms of Service and join the team.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-green-800">
+                  Click below to continue setting up your account.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">

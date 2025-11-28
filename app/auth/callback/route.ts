@@ -50,6 +50,7 @@ function sanitizeRedirectPath(path: string): string {
     '/account',
     '/settings',
     '/reset-password',
+    '/invite',  // Allow redirect to invite acceptance page
   ];
 
   const isAllowedPath = allowedPrefixes.some(prefix =>

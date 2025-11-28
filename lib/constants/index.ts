@@ -112,4 +112,5 @@ export const API_ENDPOINTS = {
   ACCOUNT_INVITE: (accountId: string, inviteId: string) => `/api/accounts/${accountId}/invites/${inviteId}`,
   INVITE_BY_TOKEN: (token: string) => `/api/invites/${token}`,
   ACCEPT_INVITE: (token: string) => `/api/invites/${token}/accept`,
+  ACCEPT_PENDING_INVITE: '/api/invites/accept-pending',  // Auto-accept invite after ToS
 } as const;

@@ -18,6 +18,7 @@ const PUBLIC_ROUTES = [
   '/onboarding/email-verified',
   '/forgot-password',
   '/reset-password',
+  '/invite',  // Allow unauthenticated users to see invite page with inline signup
 ];
 
 // Routes that require auth but NOT complete onboarding
@@ -143,8 +144,12 @@ export async function updateSession(request: NextRequest) {
   // ========================================
   // Fetch onboarding status from API
   // ========================================
-  let onboardingStatus = 'active'; // Default to active for safety
+  // SECURITY: Default to 'pending_account' (fail-closed pattern)
+  // This ensures users go through onboarding if the API call fails.
+  // If they've already completed onboarding, the redirect will be quick.
+  let onboardingStatus = 'pending_account';
   let tosAcceptedAt: string | null = null;
+  let fetchFailed = false;
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -162,14 +167,27 @@ export async function updateSession(request: NextRequest) {
 
       if (response.ok) {
         const data = await response.json();
-        onboardingStatus = data.onboarding_status || 'active';
+        onboardingStatus = data.onboarding_status || 'pending_account';
         tosAcceptedAt = data.user?.tos_accepted_at || null;
+      } else {
+        fetchFailed = true;
       }
+    } else {
+      fetchFailed = true;
     }
   } catch (error) {
-    // If we can't fetch onboarding status, allow access to prevent lockout
-    // The page-level checks will handle any issues
+    // SECURITY: Fail-closed - redirect to onboarding if we can't verify status
+    // This prevents bypassing onboarding due to API timeouts or errors
     console.error('Middleware: Failed to fetch onboarding status:', error);
+    fetchFailed = true;
+  }
+
+  // If fetch failed, redirect to the main onboarding page which will
+  // determine the correct step client-side
+  if (fetchFailed && matchesRoute(pathname, PROTECTED_ROUTES)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/onboarding';
+    return NextResponse.redirect(url);
   }
 
   // ========================================

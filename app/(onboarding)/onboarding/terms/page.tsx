@@ -4,11 +4,22 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useOnboarding } from '@/lib/hooks/use-onboarding';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, API_ENDPOINTS } from '@/lib/constants';
+import { inviteStorage } from '@/lib/utils/invite-storage';
+import { ApiClient } from '@/lib/api/client';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StepIndicator, StepIndicatorCompact } from '@/components/onboarding/step-indicator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   FileText,
   Loader2,
@@ -17,6 +28,7 @@ import {
   Shield,
   Scale,
   Lock,
+  AlertTriangle,
 } from 'lucide-react';
 
 const CURRENT_TOS_VERSION = '1.0';
@@ -28,6 +40,7 @@ export default function TermsPage() {
   const [hasAgreed, setHasAgreed] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<{ message: string; accountName: string } | null>(null);
 
   // If ToS already accepted, navigate to next step
   useEffect(() => {
@@ -60,6 +73,41 @@ export default function TermsPage() {
 
     try {
       await acceptTos(CURRENT_TOS_VERSION);
+
+      // Check if this user signed up via an invite link
+      const inviteContext = inviteStorage.get();
+      if (inviteContext) {
+        try {
+          // Create API client to auto-accept the pending invite
+          const supabase = createClient();
+          const apiClient = new ApiClient(async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            return session?.access_token || null;
+          });
+
+          // Auto-accept the pending invite (server matches by email)
+          const response = await apiClient.post<{ account_id: string }>(
+            API_ENDPOINTS.ACCEPT_PENDING_INVITE
+          );
+
+          // Clear invite context and redirect to the account
+          inviteStorage.clear();
+          router.push(ROUTES.WORKSPACE(response.account_id));
+          return;
+        } catch (inviteErr) {
+          // Show error modal instead of silently continuing
+          const errorMessage = inviteErr instanceof Error ? inviteErr.message : 'Failed to join account';
+          setInviteError({
+            message: errorMessage,
+            accountName: inviteContext.accountName,
+          });
+          setIsAccepting(false);
+          // Don't clear invite context yet - user might retry
+          return; // Stop here - don't continue to create-account
+        }
+      }
+
+      // Normal flow - go to create account
       router.push(ROUTES.ONBOARDING_CREATE_ACCOUNT);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept terms');
@@ -301,6 +349,46 @@ export default function TermsPage() {
           </div>
         </div>
       </div>
+
+      {/* Error Modal for Invite Acceptance Failure */}
+      <Dialog open={!!inviteError} onOpenChange={(open) => !open && setInviteError(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <DialogTitle>Failed to Join Account</DialogTitle>
+            </div>
+            <DialogDescription className="text-left">
+              We couldn&apos;t add you to <strong>{inviteError?.accountName}</strong>.
+              <br /><br />
+              <span className="text-destructive">{inviteError?.message}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                inviteStorage.clear();
+                setInviteError(null);
+                router.push(ROUTES.ONBOARDING_CREATE_ACCOUNT);
+              }}
+            >
+              Create New Account Instead
+            </Button>
+            <Button
+              onClick={() => {
+                setInviteError(null);
+                // Retry - handleAccept will try again
+                handleAccept();
+              }}
+            >
+              Try Again
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

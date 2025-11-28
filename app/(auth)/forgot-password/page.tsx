@@ -20,15 +20,15 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}${API_ENDPOINTS.AUTH_FORGOT_PASSWORD}`, {
+      // Use relative URL - Next.js rewrites will proxy to backend
+      const response = await fetch(API_ENDPOINTS.AUTH_FORGOT_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email,
-          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+          redirectTo: `${window.location.origin}/reset-password`,
         }),
       });
 
