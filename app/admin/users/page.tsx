@@ -19,7 +19,8 @@ import { UsersPageClient } from '@/components/admin/users-page-client';
 async function getUsers(): Promise<User[]> {
   const client = await createServerApiClient();
   try {
-    return await client.get<User[]>(API_ENDPOINTS.ADMIN_USERS);
+    const response = await client.get<{ users: User[]; total: number }>(API_ENDPOINTS.ADMIN_USERS);
+    return response.users || [];
   } catch {
     return [];
   }

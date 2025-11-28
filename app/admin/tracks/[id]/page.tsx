@@ -11,7 +11,6 @@ interface Track {
   version?: string | null;
   artist?: string | null;
   isrc: string;
-  fuga_id?: string | null;
   label?: string | null;
   p_line?: string | null;
   payees_count?: number;

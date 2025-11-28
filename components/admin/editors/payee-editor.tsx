@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,18 +9,25 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { CountrySelect } from '@/components/ui/country-select';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Save, Trash2, ArrowLeft, CheckCircle2, XCircle, User } from 'lucide-react';
+import { Save, Trash2, ArrowLeft, CheckCircle2, XCircle, User as UserIcon, ChevronsUpDown, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -67,6 +74,9 @@ export function PayeeEditor({ payee: initialPayee, isNew = false }: PayeeEditorP
   const [success, setSuccess] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userSelectOpen, setUserSelectOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(initialPayee.user || null);
   const supabase = createClient();
   const [apiClient, setApiClient] = useState<ApiClient | null>(null);
 
@@ -78,24 +88,33 @@ export function PayeeEditor({ payee: initialPayee, isNew = false }: PayeeEditorP
     initClient();
   }, [supabase]);
 
-  // Fetch users for the dropdown
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (!apiClient) return;
-      setLoadingUsers(true);
-      try {
-        const response = await apiClient.get<{ users: User[]; total: number }>(
-          `${API_ENDPOINTS.ADMIN_USERS}?limit=100`
-        );
-        setUsers(response.users || []);
-      } catch (err) {
-        console.error('Failed to fetch users:', err);
-      } finally {
-        setLoadingUsers(false);
+  // Debounced user search
+  const searchUsers = useCallback(async (search: string) => {
+    if (!apiClient) return;
+    setLoadingUsers(true);
+    try {
+      const params = new URLSearchParams({ limit: '20' });
+      if (search.trim()) {
+        params.append('search', search.trim());
       }
-    };
-    fetchUsers();
+      const response = await apiClient.get<{ users: User[]; total: number }>(
+        `${API_ENDPOINTS.ADMIN_USERS}?${params.toString()}`
+      );
+      setUsers(response.users || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
   }, [apiClient]);
+
+  // Initial load and search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchUsers(userSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearch, searchUsers]);
 
   const handleSave = async () => {
     if (!apiClient) return;
@@ -198,30 +217,84 @@ export function PayeeEditor({ payee: initialPayee, isNew = false }: PayeeEditorP
             </div>
             <div className="space-y-2">
               <Label htmlFor="user_id">LINKED USER</Label>
-              <Select
-                value={payee.user_id || 'none'}
-                onValueChange={(value) => updateField('user_id', value === 'none' ? null : value)}
-              >
-                <SelectTrigger id="user_id">
-                  <SelectValue placeholder={loadingUsers ? 'Loading users...' : 'Select a user (optional)'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">No linked user</span>
-                  </SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      <div className="flex items-center gap-2">
-                        <User className="w-3 h-3" />
-                        <span>{user.full_name || user.email || user.id}</span>
-                        {user.full_name && user.email && (
-                          <span className="text-muted-foreground text-xs">({user.email})</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={userSelectOpen} onOpenChange={setUserSelectOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={userSelectOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {selectedUser ? (
+                      <span className="flex items-center gap-2">
+                        <UserIcon className="w-4 h-4" />
+                        {selectedUser.full_name || selectedUser.email || selectedUser.id}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Select a user (optional)</span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search users by name or email..."
+                      value={userSearch}
+                      onValueChange={setUserSearch}
+                    />
+                    <CommandList>
+                      {loadingUsers ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span className="text-sm text-muted-foreground">Searching...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <CommandEmpty>No users found.</CommandEmpty>
+                          <CommandGroup>
+                            {selectedUser && (
+                              <CommandItem
+                                value="clear"
+                                onSelect={() => {
+                                  setSelectedUser(null);
+                                  updateField('user_id', null);
+                                  setUserSelectOpen(false);
+                                }}
+                                className="text-muted-foreground"
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Clear selection
+                              </CommandItem>
+                            )}
+                            {users.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={user.id}
+                                onSelect={() => {
+                                  setSelectedUser(user);
+                                  updateField('user_id', user.id);
+                                  setUserSelectOpen(false);
+                                }}
+                              >
+                                <UserIcon className={cn("w-4 h-4 mr-2", selectedUser?.id === user.id ? "text-primary" : "")} />
+                                <div className="flex flex-col">
+                                  <span className={cn(selectedUser?.id === user.id && "font-medium")}>
+                                    {user.full_name || user.email || user.id}
+                                  </span>
+                                  {user.full_name && user.email && (
+                                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">Link this payee to a user account for portal access</p>
             </div>
             <div className="space-y-2">

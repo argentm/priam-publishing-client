@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
@@ -36,26 +37,42 @@ interface StatusFilterSelectProps {
 export function StatusFilterSelect({ currentStatus, basePath }: StatusFilterSelectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering Select on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleStatusChange = (newStatus: DeliveryStatus) => {
     const params = new URLSearchParams(searchParams.toString());
-    
+
     // Preserve search param
     if (newStatus === 'all') {
       params.delete('status');
     } else {
       params.set('status', newStatus);
     }
-    
+
     // Reset to page 1 when filter changes
     params.delete('page');
-    
+
     const queryString = params.toString();
     router.push(queryString ? `${basePath}?${queryString}` : basePath);
   };
 
   const currentOption = STATUS_OPTIONS.find(opt => opt.value === currentStatus) || STATUS_OPTIONS[0];
   const CurrentIcon = currentOption.icon;
+
+  // Show a placeholder during SSR to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="w-[180px] h-10 flex items-center gap-2 px-3 border rounded-md bg-background">
+        <CurrentIcon className={`w-4 h-4 shrink-0 ${currentOption.color}`} />
+        <span className="truncate text-sm">{currentOption.label}</span>
+      </div>
+    );
+  }
 
   return (
     <Select value={currentStatus} onValueChange={handleStatusChange}>

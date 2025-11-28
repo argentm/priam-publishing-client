@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
+import { ProSelector } from '@/components/ui/pro-selector';
 import { Save, Trash2, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -187,39 +188,91 @@ export function ComposerEditor({ composer: initialComposer, isNew = false }: Com
         <Card>
           <CardHeader><CardTitle>PRO INFORMATION</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="main_pro">MAIN PRO</Label>
-              <Input id="main_pro" value={composer.main_pro || ''} onChange={(e) => updateField('main_pro', e.target.value || null)} />
+            {/* Main PRO */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>MAIN PRO</Label>
+                <ProSelector
+                  value={composer.main_pro}
+                  onChange={(value) => updateField('main_pro', value)}
+                  placeholder="Select PRO..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="main_pro_identifier">IDENTIFIER</Label>
+                <Input
+                  id="main_pro_identifier"
+                  value={composer.main_pro_identifier || ''}
+                  onChange={(e) => updateField('main_pro_identifier', e.target.value || null)}
+                  placeholder="Member ID"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="main_pro_identifier">MAIN PRO IDENTIFIER</Label>
-              <Input id="main_pro_identifier" value={composer.main_pro_identifier || ''} onChange={(e) => updateField('main_pro_identifier', e.target.value || null)} />
+
+            {/* Mechanical PRO */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>MECHANICAL PRO</Label>
+                <ProSelector
+                  value={composer.mechanical_pro}
+                  onChange={(value) => updateField('mechanical_pro', value)}
+                  placeholder="Select PRO..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mechanical_pro_identifier">IDENTIFIER</Label>
+                <Input
+                  id="mechanical_pro_identifier"
+                  value={composer.mechanical_pro_identifier || ''}
+                  onChange={(e) => updateField('mechanical_pro_identifier', e.target.value || null)}
+                  placeholder="Member ID"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="mechanical_pro">MECHANICAL PRO</Label>
-              <Input id="mechanical_pro" value={composer.mechanical_pro || ''} onChange={(e) => updateField('mechanical_pro', e.target.value || null)} />
+
+            {/* Performance PRO */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>PERFORMANCE PRO</Label>
+                <ProSelector
+                  value={composer.performance_pro}
+                  onChange={(value) => updateField('performance_pro', value)}
+                  placeholder="Select PRO..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="performance_pro_identifier">IDENTIFIER</Label>
+                <Input
+                  id="performance_pro_identifier"
+                  value={composer.performance_pro_identifier || ''}
+                  onChange={(e) => updateField('performance_pro_identifier', e.target.value || null)}
+                  placeholder="Member ID"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="mechanical_pro_identifier">MECHANICAL PRO IDENTIFIER</Label>
-              <Input id="mechanical_pro_identifier" value={composer.mechanical_pro_identifier || ''} onChange={(e) => updateField('mechanical_pro_identifier', e.target.value || null)} />
+
+            {/* Sync PRO */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>SYNC PRO</Label>
+                <ProSelector
+                  value={composer.sync_pro}
+                  onChange={(value) => updateField('sync_pro', value)}
+                  placeholder="Select PRO..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sync_pro_identifier">IDENTIFIER</Label>
+                <Input
+                  id="sync_pro_identifier"
+                  value={composer.sync_pro_identifier || ''}
+                  onChange={(e) => updateField('sync_pro_identifier', e.target.value || null)}
+                  placeholder="Member ID"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="performance_pro">PERFORMANCE PRO</Label>
-              <Input id="performance_pro" value={composer.performance_pro || ''} onChange={(e) => updateField('performance_pro', e.target.value || null)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="performance_pro_identifier">PERFORMANCE PRO IDENTIFIER</Label>
-              <Input id="performance_pro_identifier" value={composer.performance_pro_identifier || ''} onChange={(e) => updateField('performance_pro_identifier', e.target.value || null)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sync_pro">SYNC PRO</Label>
-              <Input id="sync_pro" value={composer.sync_pro || ''} onChange={(e) => updateField('sync_pro', e.target.value || null)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sync_pro_identifier">SYNC PRO IDENTIFIER</Label>
-              <Input id="sync_pro_identifier" value={composer.sync_pro_identifier || ''} onChange={(e) => updateField('sync_pro_identifier', e.target.value || null)} />
-            </div>
-            <div className="flex items-center space-x-2">
+
+            <div className="flex items-center space-x-2 pt-2">
               <Checkbox id="controlled" checked={composer.controlled || false} onCheckedChange={(checked) => updateField('controlled', checked)} />
               <Label htmlFor="controlled">CONTROLLED</Label>
             </div>

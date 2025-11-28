@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { StatusFilterSelect, type DeliveryStatus } from '@/components/ui/status-filter-select';
-import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, Clock, Send, CheckCircle2, XCircle, Truck } from 'lucide-react';
+import { Plus, Music, Search, ChevronLeft, ChevronRight, Users, Mic2, Trash2, Clock, Send, CheckCircle2, XCircle, Truck, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -185,29 +185,31 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
 
     return (
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Song Library</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Manage musical works for <span className="font-medium">{account.name}</span>
+        {/* Page Header - Priam Typography */}
+        <div className="mb-8">
+          <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">
+            Song Library
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Manage musical works for <span className="font-semibold text-foreground">{account.name}</span>
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <Card className="card-clean">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
-                <CardTitle>Your Works</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl">Your Works</CardTitle>
+                <CardDescription className="mt-1">
                   {total} work{total !== 1 ? 's' : ''} {statusFilter !== 'all' ? `(${statusFilter})` : 'registered'}
                 </CardDescription>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                 {/* Status Filter Dropdown */}
-                <Suspense fallback={<div className="w-[180px] h-10 bg-muted animate-pulse rounded-md" />}>
+                <Suspense fallback={<div className="w-[160px] h-10 bg-muted animate-pulse rounded-md" />}>
                   <StatusFilterSelect currentStatus={statusFilter} basePath={basePath} />
                 </Suspense>
-                
+
                 {/* Search */}
                 <form action={basePath} method="get" className="flex gap-2">
                   <input type="hidden" name="status" value={statusFilter} />
@@ -215,15 +217,15 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                     name="search"
                     placeholder="Search by title, ISWC..."
                     defaultValue={search}
-                    className="w-full sm:w-56"
+                    className="w-full sm:w-52"
                   />
-                  <Button type="submit" variant="outline" size="icon">
+                  <Button type="submit" variant="outline" size="icon" className="shrink-0">
                     <Search className="w-4 h-4" />
                   </Button>
                 </form>
-                
-                {/* New Work Button */}
-                <Button asChild>
+
+                {/* New Work Button - Primary CTA */}
+                <Button asChild className="shrink-0">
                   <Link href={`${basePath}/new`}>
                     <Plus className="w-4 h-4 mr-2" />
                     New Work
@@ -263,13 +265,13 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
               <>
                 <Table>
                   <TableHeader>
-                    <TableRow className="uppercase text-xs hover:bg-transparent">
-                      <TableHead className="font-semibold text-muted-foreground">Title</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Writers</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Performers</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Delivery Status</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Date Added</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
+                    <TableRow className="hover:bg-transparent border-b-2">
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Writers</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performers</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Added</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -281,29 +283,29 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                       const isComplete = isWorkComplete(work);
                       
                       return (
-                        <TableRow key={work.id} className="group hover:bg-muted/50">
-                          <TableCell>
+                        <TableRow key={work.id} className="group hover:bg-muted/30 transition-colors">
+                          <TableCell className="py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 group-hover:from-primary/30 group-hover:to-primary/10 transition-all">
                                 <Music className="w-5 h-5 text-primary" />
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <Link 
-                                    href={`${basePath}/${work.id}`} 
-                                    className="font-medium hover:text-primary transition-colors line-clamp-1"
+                                  <Link
+                                    href={`${basePath}/${work.id}`}
+                                    className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-1"
                                   >
                                     {work.title}
                                   </Link>
                                   {!isComplete && (
-                                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                                    <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50 text-xs font-medium">
                                       Incomplete
                                     </Badge>
                                   )}
                                 </div>
                                 {work.iswc && (
-                                  <div className="text-xs text-muted-foreground font-mono">
-                                    ISWC: {work.iswc}
+                                  <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                                    {work.iswc}
                                   </div>
                                 )}
                               </div>
@@ -311,60 +313,67 @@ export default async function WorksPage({ params, searchParams }: PageProps) {
                           </TableCell>
                           <TableCell>
                             {writersCount > 0 ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1.5 text-sm">
-                                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                                  <span className="text-muted-foreground">
-                                    {work.work_composers.slice(0, 2).map(c => c.composer?.name).filter(Boolean).join(', ')}
-                                    {writersCount > 2 && <span className="text-muted-foreground/60"> +{writersCount - 2}</span>}
-                                  </span>
-                                </div>
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <Users className="w-3.5 h-3.5 text-muted-foreground/70" />
+                                <span className="text-foreground/80">
+                                  {work.work_composers.slice(0, 2).map(c => c.composer?.name).filter(Boolean).join(', ')}
+                                  {writersCount > 2 && <span className="text-muted-foreground"> +{writersCount - 2}</span>}
+                                </span>
                               </div>
                             ) : (
-                              <Badge variant="outline" className="text-red-500 border-red-200 text-xs">
+                              <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50 text-xs font-medium">
                                 Required
                               </Badge>
                             )}
                           </TableCell>
                           <TableCell>
                             {performersCount > 0 ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1.5 text-sm">
-                                  <Mic2 className="w-3.5 h-3.5 text-muted-foreground" />
-                                  <span className="text-muted-foreground">
-                                    {work.work_performers.slice(0, 2).map(p => p.performer_name).join(', ')}
-                                    {performersCount > 2 && <span className="text-muted-foreground/60"> +{performersCount - 2}</span>}
-                                  </span>
-                                </div>
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <Mic2 className="w-3.5 h-3.5 text-muted-foreground/70" />
+                                <span className="text-foreground/80">
+                                  {work.work_performers.slice(0, 2).map(p => p.performer_name).join(', ')}
+                                  {performersCount > 2 && <span className="text-muted-foreground"> +{performersCount - 2}</span>}
+                                </span>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/40 text-sm">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <StatusIcon className={cn("w-4 h-4", deliveryStatus.color)} />
-                              <span className={cn("text-sm font-medium", deliveryStatus.color)}>
+                              <div className={cn(
+                                "w-2 h-2 rounded-full",
+                                deliveryStatus.bgColor
+                              )} />
+                              <span className="text-sm text-foreground/80">
                                 {deliveryStatus.label}
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {new Date(work.created_at).toLocaleDateString('en-GB', { 
-                              day: '2-digit', 
-                              month: 'short', 
-                              year: 'numeric' 
+                          <TableCell className="text-foreground/60 text-sm">
+                            {new Date(work.created_at).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
                             })}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" asChild>
-                                <Link href={`${basePath}/${work.id}`}>Edit</Link>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              >
+                                <Link href={`${basePath}/${work.id}`}>
+                                  <Edit3 className="w-3.5 h-3.5 mr-1.5" />
+                                  Edit
+                                </Link>
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 <span className="sr-only">Delete</span>

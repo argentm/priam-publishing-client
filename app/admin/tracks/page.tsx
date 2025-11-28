@@ -20,7 +20,6 @@ interface Track {
   title: string;
   artist?: string | null;
   isrc: string;
-  fuga_id?: string | null;
   account?: {
     id: string;
     name: string;

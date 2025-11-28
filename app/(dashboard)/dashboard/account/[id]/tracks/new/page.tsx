@@ -61,7 +61,6 @@ export default async function NewTrackPage({ params }: PageProps) {
       version: null,
       artist: null,
       isrc: '',
-      fuga_id: null,
       label: null,
       p_line: null,
       duration: null,

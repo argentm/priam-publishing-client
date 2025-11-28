@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
@@ -60,6 +61,11 @@ const navSections: NavSection[] = [
         name: 'Composers',
         href: ROUTES.ADMIN_COMPOSERS,
         icon: UserCog,
+      },
+      {
+        name: 'Publishers',
+        href: ROUTES.ADMIN_PUBLISHERS,
+        icon: Landmark,
       },
       {
         name: 'Payees',
@@ -137,7 +143,7 @@ const AdminNavContent = ({
           {!isCollapsed && (
             <div>
               <div className="text-lg font-bold gradient-text">PRIAM DIGITAL</div>
-              <div className="text-xs text-white/50">Admin Panel</div>
+              <div className="text-xs text-white/60">Admin Panel</div>
             </div>
           )}
         </div>

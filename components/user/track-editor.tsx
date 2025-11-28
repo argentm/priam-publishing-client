@@ -37,7 +37,6 @@ interface Track {
   version?: string | null;
   artist?: string | null;
   isrc: string;
-  fuga_id?: string | null;
   label?: string | null;
   p_line?: string | null;
   duration?: number | null;
@@ -109,7 +108,6 @@ export function UserTrackEditor({
         version: track.version,
         artist: track.artist,
         isrc: track.isrc,
-        fuga_id: track.fuga_id,
         label: track.label,
         p_line: track.p_line,
         duration: track.duration,
@@ -285,7 +283,6 @@ export function UserTrackEditor({
                 International Standard Recording Code - unique identifier for this recording
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration (seconds)</Label>
                 <Input
@@ -295,17 +292,6 @@ export function UserTrackEditor({
                   onChange={(e) => updateField('duration', e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="e.g., 210"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fuga_id">Fuga ID</Label>
-                <Input
-                  id="fuga_id"
-                  value={track.fuga_id || ''}
-                  onChange={(e) => updateField('fuga_id', e.target.value || null)}
-                  placeholder="Optional"
-                  className="font-mono"
-                />
-              </div>
             </div>
           </CardContent>
         </Card>

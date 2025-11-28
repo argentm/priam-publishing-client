@@ -28,7 +28,7 @@ export default async function NewWorkPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container max-w-5xl mx-auto">
       <WorkCreationWizard accounts={accounts} />
     </div>
   );

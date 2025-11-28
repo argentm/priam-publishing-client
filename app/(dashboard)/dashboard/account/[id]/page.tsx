@@ -6,11 +6,14 @@ import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Music, 
-  FileText, 
-  Users, 
-  ArrowRight, 
+import { SpotifyLink } from '@/components/user/spotify-link';
+import { SpotifySuggestions } from '@/components/user/spotify-suggestions';
+import { AccountTracker } from '@/components/user/account-tracker';
+import {
+  Music,
+  FileText,
+  Users,
+  ArrowRight,
   Plus,
   Disc,
   Building2,
@@ -24,7 +27,15 @@ interface Account {
   id: string;
   name: string;
   client_id?: string | null;
+  spotify_artist_id?: string | null;
+  spotify_artist_name?: string | null;
+  spotify_artist_image_url?: string | null;
+  spotify_linked_at?: string | null;
+  social_instagram?: string | null;
+  social_facebook?: string | null;
+  social_twitter?: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface Work {
@@ -77,6 +88,9 @@ export default async function AccountPage({ params }: PageProps) {
 
     return (
       <div className="space-y-8">
+        {/* Track this account as last visited */}
+        <AccountTracker accountId={id} />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -254,6 +268,14 @@ export default async function AccountPage({ params }: PageProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Spotify Integration */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpotifyLink account={account} />
+          {account.spotify_artist_id && (
+            <SpotifySuggestions account={account} />
+          )}
         </div>
       </div>
     );

@@ -12,35 +12,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { PRO_LIST } from '@/lib/constants/pros';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Save, 
-  CheckCircle2, 
-  XCircle, 
-  Plus, 
-  Trash2, 
-  UserCircle, 
-  Music, 
-  AlertCircle, 
-  Check,
-  ChevronsUpDown
+import { ProSelector } from '@/components/ui/pro-selector';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Trash2,
+  UserCircle,
+  Music,
+  AlertCircle
 } from 'lucide-react';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
 
 interface Composer {
   id: string;
@@ -85,8 +69,6 @@ export function UserComposerEditor({
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
   const [apiClient, setApiClient] = useState<ApiClient | null>(null);
-
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const initClient = async () => {
@@ -322,52 +304,12 @@ export function UserComposerEditor({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="main_pro">Main PRO</Label>
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={open}
-                      className="w-full justify-between"
-                    >
-                      {composer.main_pro
-                        ? PRO_LIST.find((pro) => pro.value === composer.main_pro)?.label || composer.main_pro
-                        : "Select PRO..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search PRO..." />
-                      <CommandList>
-                        <CommandEmpty>No PRO found.</CommandEmpty>
-                        <CommandGroup>
-                          {PRO_LIST.map((pro) => (
-                            <CommandItem
-                              key={pro.value || 'no-pro'}
-                              value={pro.label}
-                              onSelect={(currentValue) => {
-                                const selected = PRO_LIST.find(item => item.label.toLowerCase() === currentValue.toLowerCase());
-                                // Store the value (uppercase enum) or null for "No PRO"
-                                updateField('main_pro', selected?.value || null);
-                                setOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  composer.main_pro === pro.value ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {pro.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Label>Main PRO</Label>
+                <ProSelector
+                  value={composer.main_pro}
+                  onChange={(value) => updateField('main_pro', value)}
+                  placeholder="Select PRO..."
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="main_pro_identifier">PRO Member ID</Label>
@@ -387,12 +329,11 @@ export function UserComposerEditor({
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="mechanical_pro">Mechanical PRO</Label>
-                  <Input
-                    id="mechanical_pro"
-                    value={composer.mechanical_pro || ''}
-                    onChange={(e) => updateField('mechanical_pro', e.target.value || null)}
-                    placeholder="e.g., MCPS"
+                  <Label>Mechanical PRO</Label>
+                  <ProSelector
+                    value={composer.mechanical_pro}
+                    onChange={(value) => updateField('mechanical_pro', value)}
+                    placeholder="Select PRO..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -407,11 +348,11 @@ export function UserComposerEditor({
               </div>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div className="space-y-2">
-                  <Label htmlFor="performance_pro">Performance PRO</Label>
-                  <Input
-                    id="performance_pro"
-                    value={composer.performance_pro || ''}
-                    onChange={(e) => updateField('performance_pro', e.target.value || null)}
+                  <Label>Performance PRO</Label>
+                  <ProSelector
+                    value={composer.performance_pro}
+                    onChange={(value) => updateField('performance_pro', value)}
+                    placeholder="Select PRO..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -426,11 +367,11 @@ export function UserComposerEditor({
               </div>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div className="space-y-2">
-                  <Label htmlFor="sync_pro">Sync PRO</Label>
-                  <Input
-                    id="sync_pro"
-                    value={composer.sync_pro || ''}
-                    onChange={(e) => updateField('sync_pro', e.target.value || null)}
+                  <Label>Sync PRO</Label>
+                  <ProSelector
+                    value={composer.sync_pro}
+                    onChange={(value) => updateField('sync_pro', value)}
+                    placeholder="Select PRO..."
                   />
                 </div>
                 <div className="space-y-2">

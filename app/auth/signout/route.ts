@@ -1,10 +1,24 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { ROUTES } from '@/lib/constants';
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
+  const { origin } = new URL(request.url);
+
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL(ROUTES.LOGIN, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'));
+
+  return NextResponse.redirect(`${origin}/login`, {
+    status: 302,
+  });
 }
 
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const { origin } = new URL(request.url);
+
+  await supabase.auth.signOut();
+
+  return NextResponse.redirect(`${origin}/login`, {
+    status: 302,
+  });
+}

@@ -39,6 +39,11 @@
   --radius: var(--radius);
   --radius-sm: var(--radius-sm);
   --radius-lg: var(--radius-lg);
+
+  /* Typography - "Creative Display" font stack */
+  --font-family-display: var(--font-display), 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-family-body: var(--font-body), 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --font-family-mono: var(--font-mono), 'Geist Mono', ui-monospace, 'Fira Code', monospace;
 }
 
 /* ============================================
@@ -209,6 +214,22 @@
   body {
     background: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-family-body);
+  }
+
+  /* Typography - Display font for headings */
+  h1, h2, h3, .font-display {
+    font-family: var(--font-family-display);
+  }
+
+  /* Typography - Mono font for code */
+  code, pre, kbd, samp, .font-mono {
+    font-family: var(--font-family-mono);
+  }
+
+  /* Typography - Body font utility */
+  .font-body {
+    font-family: var(--font-family-body);
   }
 }
 
@@ -224,90 +245,6 @@
     min-height: 100vh;
   }
 
-  /* Button base styles */
-  .btn-base {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
-  }
-
-  .btn-base:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary) / 0.3);
-  }
-
-  .btn-base:disabled {
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
-  .btn-base svg {
-    pointer-events: none;
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-  }
-
-  .btn-primary {
-    background: linear-gradient(to bottom right, hsl(16, 100%, 59%), hsl(16, 100%, 54%));
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(to bottom right, hsl(16, 100%, 64%), hsl(16, 100%, 59%));
-    box-shadow: 0 20px 25px -5px rgba(255, 95, 46, 0.5), 0 8px 10px -6px rgba(255, 95, 46, 0.5);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0) scale(1);
-  }
-
-  .btn-destructive {
-    background: linear-gradient(to bottom right, hsl(var(--destructive)), hsl(var(--destructive) / 0.9));
-    color: white;
-  }
-
-  .btn-destructive:hover {
-    background: linear-gradient(to bottom right, hsl(var(--destructive) / 0.9), hsl(var(--destructive) / 0.8));
-    box-shadow: 0 20px 25px -5px hsl(var(--destructive) / 0.4), 0 8px 10px -6px hsl(var(--destructive) / 0.4);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  .btn-outline {
-    background: linear-gradient(to bottom right, hsl(var(--secondary) / 0.15), hsl(var(--secondary) / 0.1));
-    color: hsl(var(--secondary));
-    border: none;
-  }
-
-  .btn-outline:hover {
-    background: linear-gradient(to bottom right, hsl(var(--secondary) / 0.25), hsl(var(--secondary) / 0.2));
-    box-shadow: 0 10px 15px -3px hsl(var(--secondary) / 0.3), 0 4px 6px -4px hsl(var(--secondary) / 0.3);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  .btn-secondary {
-    background: linear-gradient(to bottom right, hsl(202, 100%, 72%), hsl(202, 100%, 67%));
-    color: white;
-  }
-
-  .btn-secondary:hover {
-    background: linear-gradient(to bottom right, hsl(202, 100%, 77%), hsl(202, 100%, 72%));
-    box-shadow: 0 20px 25px -5px rgba(115, 199, 255, 0.5), 0 8px 10px -6px rgba(115, 199, 255, 0.5);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  .btn-ghost:hover {
-    background: linear-gradient(to bottom right, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.1));
-    color: hsl(var(--foreground));
-  }
 
   /* Custom gradient backgrounds - Daring Artist theme */
   .gradient-daring {
@@ -339,88 +276,32 @@
     );
   }
 
-  /* Mercury-inspired Modern Glassmorphism - Completely borderless */
-  .glass-card {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
-  }
-
-  .dark .glass-card {
-    background: rgba(44, 43, 71, 0.3);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  /* Colorful glass variants - Borderless with colored shadows */
-  .glass-orange {
-    background: linear-gradient(135deg, rgba(255, 95, 46, 0.12), rgba(255, 95, 46, 0.04));
-    backdrop-filter: blur(24px) saturate(160%);
-    box-shadow: 0 4px 16px 0 rgba(255, 95, 46, 0.15);
-  }
-
-  .glass-purple {
-    background: linear-gradient(135deg, rgba(255, 159, 255, 0.12), rgba(255, 159, 255, 0.04));
-    backdrop-filter: blur(24px) saturate(160%);
-    box-shadow: 0 4px 16px 0 rgba(255, 159, 255, 0.15);
-  }
-
-  .glass-blue {
-    background: linear-gradient(135deg, rgba(115, 199, 255, 0.12), rgba(115, 199, 255, 0.04));
-    backdrop-filter: blur(24px) saturate(160%);
-    box-shadow: 0 4px 16px 0 rgba(115, 199, 255, 0.15);
-  }
-
-  /* Gradient effect - No border version */
-  .glass-gradient-border {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(28px) saturate(180%);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 20px 0 rgba(255, 95, 46, 0.1);
-  }
-
-  .glass-gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, 
-      rgba(255, 95, 46, 0.3),
-      rgba(255, 159, 255, 0.3),
-      rgba(115, 199, 255, 0.3)
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
   /* Animated gradient text */
   .gradient-text {
     background: linear-gradient(
       90deg,
       hsl(16, 100%, 59%),     /* Outrageous Orange */
+      hwb(25 30% 0%),     /* Light Orange */
+      
       hsl(300, 100%, 81%),    /* Lavender Rose */
-      hsl(202, 100%, 72%)     /* Malibu */
+      hsl(300, 100%, 81%),    /* Lavender Rose */
+      
+      hsl(202, 100%, 72%),    /* Malibu */
+      hsl(16, 100%, 59%)      /* Outrageous Orange */
     );
-    background-size: 200% 200%;
+    background-size: 300% 300%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: gradient-shift 5s ease infinite;
+    animation: gradient-shift 8s ease infinite;
   }
 
   @keyframes gradient-shift {
     0%, 100% {
-      background-position: 0% 50%;
+      background-position: 0% 30%;
     }
     50% {
-      background-position: 100% 50%;
+      background-position: 60% 50%;
     }
   }
 
@@ -549,33 +430,76 @@
 
   /* Base input/select/textarea styling */
   .form-control {
-    display: flex;
+    display: block;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     border-radius: var(--radius);
-    background-color: hsl(var(--background));
+    background-color: #ffffff;
+    color: hsl(220, 10%, 20%);
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
-    border: 1px solid hsl(var(--border));
-    transition: all 0.2s ease;
+    border: 1px solid hsl(220, 13%, 85%);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .form-control:hover:not(:disabled) {
-    border-color: hsl(var(--border-hover));
+  .form-control:hover:not(:disabled):not(:focus) {
+    border-color: hsl(220, 13%, 70%);
   }
 
   .form-control:focus {
     outline: none;
-    border-color: hsl(var(--primary));
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+    border-color: transparent;
+    box-shadow: 0 0 0 2px hsl(var(--primary));
   }
 
   .form-control:disabled {
+    background-color: hsl(220, 14%, 96%);
+    color: hsl(220, 10%, 50%);
+    border-color: hsl(220, 13%, 90%);
     cursor: not-allowed;
-    opacity: 0.5;
+  }
+
+  /* Only apply read-only styles to actual input/textarea elements, not buttons */
+  input.form-control:read-only,
+  textarea.form-control:read-only {
+    background-color: hsl(220, 14%, 96%);
+    color: hsl(220, 10%, 50%);
+    border-color: hsl(220, 13%, 90%);
+    cursor: not-allowed;
   }
 
   .form-control::placeholder {
-    color: hsl(var(--muted-foreground));
+    color: hsl(220, 10%, 60%);
+  }
+
+  /* Dark mode inputs */
+  .dark .form-control {
+    background-color: hsl(220, 20%, 14%);
+    color: hsl(220, 10%, 90%);
+    border-color: hsl(220, 13%, 25%);
+  }
+
+  .dark .form-control:hover:not(:disabled):not(:focus) {
+    border-color: hsl(220, 13%, 35%);
+  }
+
+  .dark .form-control:disabled {
+    background-color: hsl(220, 20%, 10%);
+    color: hsl(220, 10%, 45%);
+    border-color: hsl(220, 13%, 20%);
+  }
+
+  /* Only apply read-only styles to actual input/textarea elements, not buttons */
+  .dark input.form-control:read-only,
+  .dark textarea.form-control:read-only {
+    background-color: hsl(220, 20%, 10%);
+    color: hsl(220, 10%, 45%);
+    border-color: hsl(220, 13%, 20%);
+  }
+
+  .dark .form-control::placeholder {
+    color: hsl(220, 10%, 45%);
   }
 
   /* ===================
@@ -799,6 +723,30 @@
 
   tbody tr:last-child {
     border-bottom: none;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY: Reduced Motion
+   ============================================
+   Respects user preference for reduced motion.
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text,
+  .neon-orange,
+  .neon-purple,
+  .neon-blue {
+    animation: none !important;
+  }
+
+  .hover-lift:hover {
+    transform: none !important;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 

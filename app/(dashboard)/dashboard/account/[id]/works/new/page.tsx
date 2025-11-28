@@ -43,9 +43,9 @@ export default async function NewWorkPage({ params }: PageProps) {
     }
 
     return (
-      <div className="space-y-6">
-        <WorkCreationWizard 
-          accountId={id} 
+      <div className="container max-w-5xl mx-auto">
+        <WorkCreationWizard
+          accountId={id}
           accountName={response.account.name}
         />
       </div>

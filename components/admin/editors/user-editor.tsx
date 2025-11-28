@@ -13,6 +13,9 @@ import { ApiClient } from '@/lib/api/client';
 import { Save, X } from 'lucide-react';
 import type { User } from '@/lib/types';
 
+// Name validation regex: Unicode letters, marks, apostrophe, hyphen, space
+const NAME_REGEX = /^[\p{L}\p{M}' -]+$/u;
+
 interface UserEditorProps {
   user?: User;
   isNew?: boolean;
@@ -24,15 +27,43 @@ export function UserEditor({ user, isNew = false, onClose }: UserEditorProps) {
   const [formData, setFormData] = useState({
     email: user?.email || '',
     password: '',
-    full_name: user?.full_name || '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
     is_admin: user?.is_admin || false,
   });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ first_name?: string; last_name?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  // Validate name fields
+  const validateNames = (): boolean => {
+    const errors: { first_name?: string; last_name?: string } = {};
+
+    if (formData.first_name.trim() && formData.first_name.length > 50) {
+      errors.first_name = 'First name is too long (max 50 characters)';
+    } else if (formData.first_name.trim() && !NAME_REGEX.test(formData.first_name)) {
+      errors.first_name = 'First name contains invalid characters';
+    }
+
+    if (formData.last_name.trim() && formData.last_name.length > 50) {
+      errors.last_name = 'Last name is too long (max 50 characters)';
+    } else if (formData.last_name.trim() && !NAME_REGEX.test(formData.last_name)) {
+      errors.last_name = 'Last name contains invalid characters';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate names before submitting
+    if (!validateNames()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -57,7 +88,8 @@ export function UserEditor({ user, isNew = false, onClose }: UserEditorProps) {
         await apiClient.post<{ message: string; user: User }>(API_ENDPOINTS.ADMIN_USERS, {
           email: formData.email,
           password: formData.password,
-          full_name: formData.full_name || undefined,
+          first_name: formData.first_name.trim() || undefined,
+          last_name: formData.last_name.trim() || undefined,
           is_admin: formData.is_admin,
         });
 
@@ -67,7 +99,8 @@ export function UserEditor({ user, isNew = false, onClose }: UserEditorProps) {
         // Update existing user
         await apiClient.put<User>(`${API_ENDPOINTS.ADMIN_USERS}/${user.id}`, {
           email: formData.email,
-          full_name: formData.full_name,
+          first_name: formData.first_name.trim() || undefined,
+          last_name: formData.last_name.trim() || undefined,
           is_admin: formData.is_admin,
         });
 
@@ -172,17 +205,47 @@ export function UserEditor({ user, isNew = false, onClose }: UserEditorProps) {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-xs font-semibold text-foreground/70 normal-case tracking-normal">Full Name</Label>
-                <Input
-                  id="full_name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  disabled={loading}
-                  className="h-12"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name" className="text-xs font-semibold text-foreground/70 normal-case tracking-normal">First Name</Label>
+                  <Input
+                    id="first_name"
+                    type="text"
+                    placeholder="John"
+                    value={formData.first_name}
+                    onChange={(e) => {
+                      setFormData({ ...formData, first_name: e.target.value });
+                      if (fieldErrors.first_name) {
+                        setFieldErrors({ ...fieldErrors, first_name: undefined });
+                      }
+                    }}
+                    disabled={loading}
+                    className={`h-12 ${fieldErrors.first_name ? 'border-destructive' : ''}`}
+                  />
+                  {fieldErrors.first_name && (
+                    <p className="text-xs text-destructive">{fieldErrors.first_name}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name" className="text-xs font-semibold text-foreground/70 normal-case tracking-normal">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    type="text"
+                    placeholder="Doe"
+                    value={formData.last_name}
+                    onChange={(e) => {
+                      setFormData({ ...formData, last_name: e.target.value });
+                      if (fieldErrors.last_name) {
+                        setFieldErrors({ ...fieldErrors, last_name: undefined });
+                      }
+                    }}
+                    disabled={loading}
+                    className={`h-12 ${fieldErrors.last_name ? 'border-destructive' : ''}`}
+                  />
+                  {fieldErrors.last_name && (
+                    <p className="text-xs text-destructive">{fieldErrors.last_name}</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/20 hover:bg-muted/30 transition-all duration-200 cursor-pointer border border-transparent hover:border-primary/20">

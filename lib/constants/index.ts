@@ -7,6 +7,16 @@ export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
   DASHBOARD: '/dashboard',
+  // Onboarding flow
+  ONBOARDING: '/onboarding',
+  ONBOARDING_VERIFY_EMAIL: '/onboarding/verify-email',
+  ONBOARDING_EMAIL_VERIFIED: '/onboarding/email-verified',
+  ONBOARDING_TERMS: '/onboarding/terms',
+  ONBOARDING_CREATE_ACCOUNT: '/onboarding/create-account',
+  ONBOARDING_VERIFY_IDENTITY: '/onboarding/verify-identity',
+  ONBOARDING_COMPLETE: '/onboarding/complete',
+  // Legacy route - redirect to new onboarding
+  ONBOARDING_NEW_ACCOUNT: '/new-account',
   ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_USERS: '/admin/users',
@@ -17,6 +27,8 @@ export const ROUTES = {
   ADMIN_CONTRACTS: '/admin/contracts',
   ADMIN_PAYEES: '/admin/payees',
   ADMIN_COMPOSERS: '/admin/composers',
+  ADMIN_PUBLISHERS: '/admin/publishers',
+  ADMIN_PUBLISHER: (id: string) => `/admin/publishers/${id}`,
   ACCOUNT: (id: string) => `/dashboard/account/${id}`,
   ACCOUNT_NEW: '/dashboard/account/new',
   ACCOUNT_WORKS: (id: string) => `/dashboard/account/${id}/works`,
@@ -39,6 +51,8 @@ export const ROUTES = {
   WORKSPACE_COMPOSERS: (id: string) => `/dashboard/account/${id}/composers`,
   WORKSPACE_COMPOSERS_NEW: (id: string) => `/dashboard/account/${id}/composers/new`,
   WORKSPACE_TRACKS_NEW: (id: string) => `/dashboard/account/${id}/tracks/new`,
+  // Invite routes
+  INVITE_ACCEPT: (token: string) => `/invite/${token}`,
 } as const;
 
 export const USER_ROLES = {
@@ -48,11 +62,17 @@ export const USER_ROLES = {
 } as const;
 
 export const API_ENDPOINTS = {
+  // Onboarding
+  ONBOARDING_STATUS: '/api/onboarding/status',
+  ONBOARDING_ACCEPT_TOS: '/api/onboarding/accept-tos',
+  ONBOARDING_CREATE_ACCOUNT: '/api/onboarding/create-account',
+  ONBOARDING_SKIP_IDENTITY: '/api/onboarding/skip-identity',
+  // Dashboard
   DASHBOARD: '/api/dashboard',
   ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
   DASHBOARD_ACCOUNT: (id: string) => `/api/dashboard/account/${id}`,
   DASHBOARD_COMPOSERS: (accountId: string) => `/api/accounts/${accountId}/composers`,
-  DASHBOARD_TRACKS: (accountId: string) => `/api/accounts/${accountId}/tracks`,
+  DASHBOARD_TRACKS: (accountId: string) => `/api/tracks?account_id=${accountId}`,
   ACCOUNTS: '/api/accounts',
   WORKS: '/api/works',
   COMPOSERS: '/api/composers',
@@ -60,6 +80,7 @@ export const API_ENDPOINTS = {
   PAYEES: '/api/payees',
   CONTRACTS: '/api/contracts',
   AUTH_SESSION: '/api/auth/session',
+  AUTH_FORGOT_PASSWORD: '/api/auth/forgot-password',
   ADMIN_USERS: '/api/admin/users',
   ADMIN_ACCOUNTS: '/api/admin/accounts',
   ADMIN_ACCOUNT: (id: string) => `/api/admin/accounts/${id}`,
@@ -68,6 +89,27 @@ export const API_ENDPOINTS = {
   ADMIN_CONTRACTS: '/api/admin/contracts',
   ADMIN_PAYEES: '/api/admin/payees',
   ADMIN_COMPOSERS: '/api/admin/composers',
+  ADMIN_PUBLISHERS: '/api/admin/publishers',
+  ADMIN_PUBLISHER: (id: string) => `/api/admin/publishers/${id}`,
+  ADMIN_PUBLISHER_SOCIETIES: (id: string) => `/api/admin/publishers/${id}/societies`,
+  ADMIN_PUBLISHER_CONTRACTS: (id: string) => `/api/admin/publishers/${id}/contracts`,
+  ADMIN_ACCOUNT_COMPOSERS: (accountId: string) => `/api/admin/accounts/${accountId}/composers`,
+  ADMIN_ACCOUNT_TRACKS: (accountId: string) => `/api/admin/accounts/${accountId}/tracks`,
   VERIFICATION_CREATE_SESSION: '/api/verification/create-session',
   VERIFICATION_STATUS: '/api/verification/status',
+  // Spotify Integration
+  SPOTIFY_SEARCH_ARTISTS: '/api/spotify/search/artists',
+  SPOTIFY_ARTIST: (id: string) => `/api/spotify/artists/${id}`,
+  SPOTIFY_LINK: '/api/spotify/link',
+  SPOTIFY_SUGGESTIONS: '/api/spotify/suggestions',
+  SPOTIFY_SUGGESTION: (trackId: string) => `/api/spotify/suggestions/${trackId}`,
+  SPOTIFY_IMPORT: '/api/spotify/import',
+  SPOTIFY_SOCIAL_LINKS: '/api/spotify/social-links',
+  // Team Management
+  ACCOUNT_MEMBERS: (accountId: string) => `/api/accounts/${accountId}/members`,
+  ACCOUNT_MEMBER: (accountId: string, userId: string) => `/api/accounts/${accountId}/members/${userId}`,
+  ACCOUNT_INVITES: (accountId: string) => `/api/accounts/${accountId}/invites`,
+  ACCOUNT_INVITE: (accountId: string, inviteId: string) => `/api/accounts/${accountId}/invites/${inviteId}`,
+  INVITE_BY_TOKEN: (token: string) => `/api/invites/${token}`,
+  ACCEPT_INVITE: (token: string) => `/api/invites/${token}/accept`,
 } as const;

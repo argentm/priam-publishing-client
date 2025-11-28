@@ -22,7 +22,6 @@ interface Track {
   version?: string | null;
   artist?: string | null;
   isrc: string;
-  fuga_id?: string | null;
   label?: string | null;
   p_line?: string | null;
   payees_count?: number;
@@ -82,7 +81,6 @@ export function TrackEditor({ track: initialTrack, isNew = false }: TrackEditorP
           artist: track.artist,
           version: track.version,
           foreign_id: track.foreign_id,
-          fuga_id: track.fuga_id,
           label: track.label,
           p_line: track.p_line,
           duration: track.duration,
@@ -233,15 +231,6 @@ export function TrackEditor({ track: initialTrack, isNew = false }: TrackEditorP
               <p className="text-xs text-muted-foreground">
                 International Standard Recording Code
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fuga_id">FUGA ID</Label>
-              <Input
-                id="fuga_id"
-                value={track.fuga_id || ''}
-                onChange={(e) => updateField('fuga_id', e.target.value || null)}
-              />
             </div>
 
             <div className="space-y-2">

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
+import { setLastAccountId } from '@/lib/utils/account-storage';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -124,7 +125,9 @@ function AccountSwitcher({ accounts, currentAccount, isCollapsed }: AccountSwitc
   }, []);
 
   const handleAccountSelect = (account: Account) => {
-    // Navigate to the selected account's dashboard
+    // Store as last selected account
+    setLastAccountId(account.id);
+    // Navigate to the selected account's workspace
     router.push(ROUTES.WORKSPACE(account.id));
     setOpen(false);
   };
@@ -205,12 +208,12 @@ function AccountSwitcher({ accounts, currentAccount, isCollapsed }: AccountSwitc
               <p className="text-sm font-semibold text-white truncate">
                 {currentAccount?.name || 'Select Account'}
               </p>
-              <p className="text-xs text-white/50 capitalize">
+              <p className="text-xs text-white/60 capitalize">
                 {currentAccount?.role || 'No account selected'}
               </p>
             </div>
           </div>
-          <ChevronsUpDown className="w-4 h-4 text-white/50 flex-shrink-0" />
+          <ChevronsUpDown className="w-4 h-4 text-white/60 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="start">
