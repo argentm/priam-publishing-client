@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = [
   '/forgot-password',
   '/reset-password',
   '/invite',  // Allow unauthenticated users to see invite page with inline signup
+  '/error',   // Error page must be accessible without auth
 ];
 
 // Routes that require auth but NOT complete onboarding
@@ -144,9 +145,9 @@ export async function updateSession(request: NextRequest) {
   // ========================================
   // Fetch onboarding status from API
   // ========================================
-  // SECURITY: Default to 'pending_account' (fail-closed pattern)
-  // This ensures users go through onboarding if the API call fails.
-  // If they've already completed onboarding, the redirect will be quick.
+  // SECURITY: TRUE FAIL-CLOSED pattern
+  // If we can't reach the server, redirect to /error page (not /onboarding!)
+  // This completely blocks access until server is available.
   let onboardingStatus = 'pending_account';
   let tosAcceptedAt: string | null = null;
   let fetchFailed = false;
@@ -162,7 +163,7 @@ export async function updateSession(request: NextRequest) {
           Authorization: `Bearer ${accessToken}`,
         },
         // Short timeout to not block the middleware too long
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(5000),
       });
 
       if (response.ok) {
@@ -176,17 +177,19 @@ export async function updateSession(request: NextRequest) {
       fetchFailed = true;
     }
   } catch (error) {
-    // SECURITY: Fail-closed - redirect to onboarding if we can't verify status
-    // This prevents bypassing onboarding due to API timeouts or errors
+    // SECURITY: TRUE fail-closed - redirect to ERROR page, not a functional page
     console.error('Middleware: Failed to fetch onboarding status:', error);
     fetchFailed = true;
   }
 
-  // If fetch failed, redirect to the main onboarding page which will
-  // determine the correct step client-side
-  if (fetchFailed && matchesRoute(pathname, PROTECTED_ROUTES)) {
+  // SECURITY: TRUE FAIL-CLOSED
+  // If we can't verify the user's status with our server, block ALL access
+  // Redirect to error page - this is a dead-end with no functionality
+  if (fetchFailed) {
     const url = request.nextUrl.clone();
-    url.pathname = '/onboarding';
+    url.pathname = '/error';
+    url.searchParams.set('code', 'server_unavailable');
+    url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);
   }
 

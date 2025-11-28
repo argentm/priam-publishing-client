@@ -15,19 +15,14 @@ export async function createServerApiClient() {
     console.error('Error getting session:', sessionError);
   }
   
-  if (!session?.access_token) {
-    console.warn('No access token found in session', {
-      hasSession: !!session,
-      hasAccessToken: !!session?.access_token,
-      expiresAt: session?.expires_at,
-    });
-  } else {
-    // Log token info for debugging (first 20 chars only for security)
-    console.log('Token found:', {
-      tokenPrefix: session.access_token.substring(0, 20) + '...',
-      expiresAt: session.expires_at,
-      expiresIn: session.expires_at ? Math.floor((session.expires_at * 1000 - Date.now()) / 1000) : null,
-    });
+  // Only log token issues in development - NEVER log token data in production
+  if (process.env.NODE_ENV === 'development') {
+    if (!session?.access_token) {
+      console.warn('No access token found in session', {
+        hasSession: !!session,
+        expiresAt: session?.expires_at,
+      });
+    }
   }
   
   return new ApiClient(async () => session?.access_token || null);

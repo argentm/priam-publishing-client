@@ -31,7 +31,15 @@ export default async function AdminLayoutWrapper({
   // Fetch user with admin status from API
   const user = await getUserWithAdminStatus();
 
-  if (!user || !isAdmin(user)) {
+  // SECURITY: TRUE FAIL-CLOSED
+  // If user is null (API failed), redirect to error page, NOT dashboard
+  // This prevents admin bypass when server is unavailable
+  if (!user) {
+    redirect('/error?code=server_unavailable&from=/admin');
+  }
+
+  // User exists but is not admin - redirect to dashboard
+  if (!isAdmin(user)) {
     redirect(ROUTES.DASHBOARD);
   }
 

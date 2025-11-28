@@ -48,17 +48,10 @@ export default async function DashboardLayoutWrapper({
   const dashboardData = await getDashboardData();
 
   if (!dashboardData) {
-    // If we can't fetch data, still show layout with minimal info
-    const fallbackUser: User = {
-      id: authUser.id,
-      email: authUser.email,
-    };
-    
-    return (
-      <UserLayout user={fallbackUser} accounts={[]} currentAccount={null}>
-        {children}
-      </UserLayout>
-    );
+    // SECURITY: TRUE FAIL-CLOSED
+    // If we can't fetch data from the server, redirect to error page
+    // Do NOT render any UI - this prevents access without server validation
+    redirect('/error?code=server_unavailable&from=/dashboard');
   }
 
   const userInfo: User = dashboardData.user || {
