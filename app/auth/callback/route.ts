@@ -73,7 +73,8 @@ async function getOnboardingRedirect(
   defaultNext: string
 ): Promise<string> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Use server-side API_URL for direct backend connection (no proxy needed)
+    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const response = await fetch(`${apiUrl}/api/onboarding/status`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
