@@ -6,8 +6,8 @@ async function handleSignOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
 
-  // Get the correct origin from headers (not request.url which may be localhost)
-  const origin = await getOrigin();
+  // Get origin from environment variable
+  const origin = getOrigin();
 
   return NextResponse.redirect(`${origin}/login`, {
     status: 302,

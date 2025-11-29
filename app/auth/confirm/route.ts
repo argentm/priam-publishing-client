@@ -17,8 +17,8 @@ import { getOrigin } from '@/lib/utils/get-origin';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  // Get the correct origin from headers (not request.url which may be localhost)
-  const origin = await getOrigin();
+  // Get origin from environment variable
+  const origin = getOrigin();
 
   // Support both token_hash and code parameters
   const token_hash = searchParams.get('token_hash');

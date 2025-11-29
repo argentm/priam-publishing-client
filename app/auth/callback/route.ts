@@ -111,8 +111,8 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const rawNext = searchParams.get('next') ?? '/dashboard';
 
-  // Get the correct origin from headers (not request.url which may be localhost)
-  const origin = await getOrigin();
+  // Get origin from environment variable
+  const origin = getOrigin();
 
   // Sanitize the redirect path to prevent open redirect attacks
   const next = sanitizeRedirectPath(rawNext);
