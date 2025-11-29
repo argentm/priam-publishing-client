@@ -1,24 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
-export async function POST(request: Request) {
+async function handleSignOut() {
   const supabase = await createClient();
-  const { origin } = new URL(request.url);
-
   await supabase.auth.signOut();
+
+  // Get the host from headers (more reliable in production)
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+  const origin = `${protocol}://${host}`;
 
   return NextResponse.redirect(`${origin}/login`, {
     status: 302,
   });
 }
 
-export async function GET(request: Request) {
-  const supabase = await createClient();
-  const { origin } = new URL(request.url);
+export async function POST() {
+  return handleSignOut();
+}
 
-  await supabase.auth.signOut();
-
-  return NextResponse.redirect(`${origin}/login`, {
-    status: 302,
-  });
+export async function GET() {
+  return handleSignOut();
 }
