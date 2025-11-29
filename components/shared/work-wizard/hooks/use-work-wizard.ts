@@ -272,6 +272,12 @@ export function useWorkWizard({ accountId, apiConfig, onSuccess }: UseWorkWizard
     try {
       const rightsChain = generateIpChain();
 
+      // Extract composer IDs for the work_composers junction table
+      // This enables composers to show in works list view
+      const composerIds = writers
+        .filter((w) => w.composerId)
+        .map((w) => w.composerId as string);
+
       const payload = {
         account_id: accountId,
         title: workData.title,
@@ -282,6 +288,7 @@ export function useWorkWizard({ accountId, apiConfig, onSuccess }: UseWorkWizard
         production_library: workData.productionLibrary,
         grand_rights: workData.grandRights,
         rights_chain: rightsChain,
+        composers: composerIds,  // Populate work_composers junction table
         tracks: linkedTracks.map((t) => t.id),
         // Extended details
         foreign_id: detailsData.foreignId || null,
