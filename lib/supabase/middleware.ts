@@ -7,6 +7,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getApiUrl } from '@/lib/utils/get-origin';
 
 // Route categories for protection logic
 const PUBLIC_ROUTES = [
@@ -153,8 +154,8 @@ export async function updateSession(request: NextRequest) {
   let fetchFailed = false;
 
   try {
-    // Use API_URL for server-side calls, fallback to NEXT_PUBLIC_API_URL
-    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Use getApiUrl() utility which validates env vars are set
+    const apiUrl = getApiUrl();
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
 

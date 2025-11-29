@@ -18,6 +18,5 @@ export async function POST() {
   return handleSignOut();
 }
 
-export async function GET() {
-  return handleSignOut();
-}
+// NOTE: GET handler intentionally removed to prevent CSRF attacks
+// All logout requests must use POST method
