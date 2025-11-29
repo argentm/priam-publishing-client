@@ -9,8 +9,12 @@ const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return '';
   }
-  // In server components, use absolute URL
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // In server components, use absolute URL - env var is required
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) {
+    throw new Error('NEXT_PUBLIC_API_URL environment variable is required for server-side API calls');
+  }
+  return apiUrl;
 };
 
 export interface ApiError {

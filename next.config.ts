@@ -3,6 +3,12 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
+// Validate required environment variable at build time
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+if (!apiUrl) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is required for API proxy rewrites');
+}
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -22,7 +28,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/:path*`,
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },

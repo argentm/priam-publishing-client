@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      // Log error for debugging but don't expose Supabase error messages to users
       console.error('Email verification error:', error.message);
-      errorUrl.searchParams.set('message', error.message);
       return NextResponse.redirect(errorUrl);
     }
 
@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
+      // Log error for debugging but don't expose Supabase error messages to users
       console.error('Code exchange error:', error.message);
-      errorUrl.searchParams.set('message', error.message);
       return NextResponse.redirect(errorUrl);
     }
 
