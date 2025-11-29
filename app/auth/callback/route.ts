@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getOrigin, getApiUrl } from '@/lib/utils/get-origin';
 
 /**
  * Validates and sanitizes the redirect path to prevent open redirect attacks.
@@ -50,7 +51,7 @@ function sanitizeRedirectPath(path: string): string {
     '/account',
     '/settings',
     '/reset-password',
-    '/invite',  // Allow redirect to invite acceptance page
+    '/invite',
   ];
 
   const isAllowedPath = allowedPrefixes.some(prefix =>
@@ -73,8 +74,7 @@ async function getOnboardingRedirect(
   defaultNext: string
 ): Promise<string> {
   try {
-    // Use server-side API_URL for direct backend connection (no proxy needed)
-    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/api/onboarding/status`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -82,7 +82,6 @@ async function getOnboardingRedirect(
     });
 
     if (!response.ok) {
-      // If we can't get status, default to the specified next path
       return defaultNext;
     }
 
@@ -94,7 +93,6 @@ async function getOnboardingRedirect(
       case 'pending_email':
         return '/onboarding/verify-email';
       case 'pending_account':
-        // Check if ToS is accepted
         return tosAccepted ? '/onboarding/create-account' : '/onboarding/terms';
       case 'pending_identity':
         return '/onboarding/verify-identity';
@@ -109,9 +107,12 @@ async function getOnboardingRedirect(
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const rawNext = searchParams.get('next') ?? '/dashboard';
+
+  // Get the correct origin from headers (not request.url which may be localhost)
+  const origin = await getOrigin();
 
   // Sanitize the redirect path to prevent open redirect attacks
   const next = sanitizeRedirectPath(rawNext);

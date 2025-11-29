@@ -12,9 +12,13 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getOrigin } from '@/lib/utils/get-origin';
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+
+  // Get the correct origin from headers (not request.url which may be localhost)
+  const origin = await getOrigin();
 
   // Support both token_hash and code parameters
   const token_hash = searchParams.get('token_hash');

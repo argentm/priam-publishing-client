@@ -153,7 +153,8 @@ export async function updateSession(request: NextRequest) {
   let fetchFailed = false;
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Use API_URL for server-side calls, fallback to NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
 
