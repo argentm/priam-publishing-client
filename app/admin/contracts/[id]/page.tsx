@@ -40,9 +40,10 @@ async function getContract(id: string): Promise<Contract | null> {
 export default async function ContractDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const contract = await getContract(params.id);
+  const { id } = await params;
+  const contract = await getContract(id);
 
   if (!contract) {
     redirect('/admin/contracts');

@@ -172,6 +172,20 @@ export interface AccountWithSpotify {
   updated_at: string;
 }
 
+// Payee type
+export interface Payee {
+  id: string;
+  user_id: string;
+  account_id?: string | null;
+  name: string;
+  client_id?: string | null;
+  foreign_id?: string | null;
+  country?: string;
+  vat_no?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Composer type
 export interface Composer {
   id: string;
@@ -229,6 +243,10 @@ export interface Work {
   original_work_source?: string | null;
   approval_status?: string;
   approved_date?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  submitted_at?: string | null;
   on_hold?: boolean;
   valid?: boolean;
   validation_errors?: string[];
@@ -243,5 +261,47 @@ export interface Work {
     id: string;
     name: string;
   };
+}
+
+// Notification types
+export type NotificationType =
+  | 'work_submitted'
+  | 'work_approved'
+  | 'work_rejected'
+  | 'work_conflict_detected'
+  | 'work_conflict_resolved'
+  | 'team_invite_accepted'
+  | 'team_member_joined'
+  | 'contract_expiring'
+  | 'admin_announcement';
+
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  account_id?: string | null;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  action_url?: string | null;
+  read_at?: string | null;
+  archived_at?: string | null;
+  group_key?: string | null;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  total: number;
+  unread_count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface UnreadCountResponse {
+  count: number;
 }
 

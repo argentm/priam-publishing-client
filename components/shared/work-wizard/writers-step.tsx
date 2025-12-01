@@ -35,7 +35,8 @@ import {
   Divide,
 } from 'lucide-react';
 import type { WritersStepProps, Writer, Composer } from './types';
-import { PRO_LIST, WRITER_ROLES } from './constants';
+import { WRITER_ROLES } from './constants';
+import { ProSelector } from '@/components/ui/pro-selector';
 
 export function WritersStep({
   writers,
@@ -50,6 +51,7 @@ export function WritersStep({
 }: WritersStepProps) {
   const [composerSearch, setComposerSearch] = useState('');
   const [showNewComposerDialog, setShowNewComposerDialog] = useState(false);
+  const [showProConfirmDialog, setShowProConfirmDialog] = useState(false);
   const [creatingComposer, setCreatingComposer] = useState(false);
   const [newComposerData, setNewComposerData] = useState({
     name: '',
@@ -59,6 +61,14 @@ export function WritersStep({
     mainPro: '',
     controlled: true,
   });
+
+  // Check if PRO info is missing (neither CAE nor PRO provided)
+  const isMissingProInfo = !newComposerData.cae.trim() && !newComposerData.mainPro;
+
+  // Check for partial PRO info (CAE without PRO or PRO without CAE)
+  const hasPartialProInfo =
+    (newComposerData.cae.trim() !== '' && !newComposerData.mainPro) ||
+    (!!newComposerData.mainPro && !newComposerData.cae.trim());
 
   // Filter composers based on search
   const filteredComposers = useMemo(() => {
@@ -178,6 +188,21 @@ export function WritersStep({
     }
   };
 
+  // Handle add writer click - show confirmation if no PRO info
+  const handleAddWriterClick = () => {
+    if (isMissingProInfo) {
+      setShowProConfirmDialog(true);
+    } else {
+      handleAddNewComposer();
+    }
+  };
+
+  // Confirm adding without PRO
+  const handleConfirmNoProAffiliation = () => {
+    setShowProConfirmDialog(false);
+    handleAddNewComposer();
+  };
+
   // Share splits equally
   const shareSplitsEqually = () => {
     if (writers.length === 0) return;
@@ -239,19 +264,20 @@ export function WritersStep({
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search existing composers */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search existing composers by name or CAE..."
+                placeholder="Search composers by name or CAE..."
                 value={composerSearch}
                 onChange={(e) => setComposerSearch(e.target.value)}
                 className="pl-10"
+                aria-label="Search composers"
               />
             </div>
             <Dialog open={showNewComposerDialog} onOpenChange={setShowNewComposerDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   New Writer
                 </Button>
@@ -264,7 +290,7 @@ export function WritersStep({
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>
                         First Name <span className="text-destructive">*</span>
@@ -370,7 +396,7 @@ export function WritersStep({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>CAE/IPI Number</Label>
                       <Input
@@ -383,23 +409,13 @@ export function WritersStep({
                     </div>
                     <div className="space-y-2">
                       <Label>PRO</Label>
-                      <Select
-                        value={newComposerData.mainPro}
-                        onValueChange={(value) =>
-                          setNewComposerData((prev) => ({ ...prev, mainPro: value }))
+                      <ProSelector
+                        value={newComposerData.mainPro || null}
+                        onChange={(value) =>
+                          setNewComposerData((prev) => ({ ...prev, mainPro: value || '' }))
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select PRO" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PRO_LIST.map((pro) => (
-                            <SelectItem key={pro} value={pro}>
-                              {pro}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select PRO..."
+                      />
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -414,18 +430,33 @@ export function WritersStep({
                       This is a controlled writer (you administer their rights)
                     </Label>
                   </div>
+
+                  {/* Validation: CAE requires PRO and vice versa */}
+                  {newComposerData.cae.trim() && !newComposerData.mainPro && (
+                    <div className="flex items-center gap-2 text-destructive text-sm p-3 bg-destructive/10 rounded-lg">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      PRO is required when CAE/IPI Number is provided
+                    </div>
+                  )}
+                  {newComposerData.mainPro && !newComposerData.cae.trim() && (
+                    <div className="flex items-center gap-2 text-destructive text-sm p-3 bg-destructive/10 rounded-lg">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      CAE/IPI Number is required when PRO is selected
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowNewComposerDialog(false)}>
                     Cancel
                   </Button>
                   <Button
-                    onClick={handleAddNewComposer}
+                    onClick={handleAddWriterClick}
                     disabled={
                       !newComposerData.firstName.trim() ||
                       !newComposerData.surname.trim() ||
                       creatingComposer ||
-                      !!duplicateComposerCheck
+                      !!duplicateComposerCheck ||
+                      hasPartialProInfo
                     }
                   >
                     {creatingComposer ? 'Adding...' : 'Add Writer'}
@@ -502,14 +533,14 @@ export function WritersStep({
       {/* Writers List */}
       {writers.length > 0 && (
         <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle>Added Writers ({writers.length})</CardTitle>
-              <div className="flex items-center gap-3">
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <CardTitle className="text-base sm:text-lg">Added Writers ({writers.length})</CardTitle>
+              <div className="flex items-center gap-2 sm:gap-3">
                 {/* Circular Progress */}
-                <div className="flex items-center gap-2">
-                  <div className="relative w-10 h-10">
-                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 -rotate-90" viewBox="0 0 36 36">
                       <circle
                         cx="18"
                         cy="18"
@@ -536,7 +567,7 @@ export function WritersStep({
                       />
                     </svg>
                     <span
-                      className={`absolute inset-0 flex items-center justify-center text-xs font-semibold ${
+                      className={`absolute inset-0 flex items-center justify-center text-[10px] sm:text-xs font-semibold ${
                         totalShare === 100
                           ? 'text-green-600'
                           : totalShare > 100
@@ -557,50 +588,66 @@ export function WritersStep({
                   variant="outline"
                   size="sm"
                   onClick={shareSplitsEqually}
+                  className="h-8 text-xs sm:text-sm"
                 >
                   <Divide className="w-3 h-3 mr-1" />
-                  Split Equally
+                  <span className="hidden xs:inline">Split</span> Equally
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {writers.map((writer) => (
-              <div key={writer.tempId} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+              <div key={writer.tempId} className="border rounded-lg p-3 sm:p-4 space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center ${
                         writer.isControlled
                           ? 'bg-primary/10 text-primary'
                           : 'bg-muted text-muted-foreground'
                       }`}
                     >
-                      <UserCircle className="w-5 h-5" />
+                      <UserCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                    <div>
-                      <p className="font-semibold">{writer.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {writer.cae && <span>CAE: {writer.cae}</span>}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm sm:text-base truncate">{writer.name}</p>
+                      <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                        {writer.cae && <span className="truncate">CAE: {writer.cae}</span>}
                         {writer.mainPro && <span>• {writer.mainPro}</span>}
                       </div>
+                      <div className="flex flex-wrap gap-1 mt-1 sm:hidden">
+                        {writer.isControlled && (
+                          <Badge variant="default" className="text-xs">
+                            Controlled
+                          </Badge>
+                        )}
+                        {writer.isNew && (
+                          <Badge variant="outline" className="text-xs">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    {writer.isControlled && (
-                      <Badge variant="default" className="ml-2">
-                        Controlled
-                      </Badge>
-                    )}
-                    {writer.isNew && (
-                      <Badge variant="outline" className="ml-2">
-                        New
-                      </Badge>
-                    )}
+                    <div className="hidden sm:flex items-center gap-2">
+                      {writer.isControlled && (
+                        <Badge variant="default">
+                          Controlled
+                        </Badge>
+                      )}
+                      {writer.isNew && (
+                        <Badge variant="outline">
+                          New
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeWriter(writer.tempId)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive flex-shrink-0 h-8 w-8"
+                    aria-label="Remove writer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -608,81 +655,15 @@ export function WritersStep({
 
                 {/* Simple Mode Fields */}
                 {editorMode === 'simple' && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Writer Role</Label>
-                      <Select
-                        value={writer.role}
-                        onValueChange={(val) => updateWriter(writer.tempId, 'role', val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WRITER_ROLES.map((role) => (
-                            <SelectItem key={role.value} value={role.value}>
-                              {role.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs">Share %</Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.01}
-                          value={writer.share || ''}
-                          onChange={(e) =>
-                            updateWriter(writer.tempId, 'share', parseFloat(e.target.value) || 0)
-                          }
-                          onBlur={(e) => {
-                            if (e.target.value === '') {
-                              updateWriter(writer.tempId, 'share', 0);
-                            }
-                          }}
-                          className="pr-8"
-                          placeholder="0"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                          %
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2 pt-6">
-                      <Checkbox
-                        id={`controlled-${writer.tempId}`}
-                        checked={writer.isControlled}
-                        onCheckedChange={(checked) =>
-                          updateWriter(writer.tempId, 'isControlled', checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor={`controlled-${writer.tempId}`}
-                        className="font-normal cursor-pointer text-xs"
-                      >
-                        Right To Collect
-                      </Label>
-                    </div>
-                  </div>
-                )}
-
-                {/* Advanced Mode Fields */}
-                {editorMode === 'advanced' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="space-y-1.5">
                         <Label className="text-xs">Writer Role</Label>
                         <Select
                           value={writer.role}
                           onValueChange={(val) => updateWriter(writer.tempId, 'role', val)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -694,7 +675,75 @@ export function WritersStep({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex items-center space-x-2 pt-6">
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Share %</Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.01}
+                            value={writer.share || ''}
+                            onChange={(e) =>
+                              updateWriter(writer.tempId, 'share', parseFloat(e.target.value) || 0)
+                            }
+                            onBlur={(e) => {
+                              if (e.target.value === '') {
+                                updateWriter(writer.tempId, 'share', 0);
+                              }
+                            }}
+                            className="pr-8 h-9"
+                            placeholder="0"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                            %
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="col-span-2 sm:col-span-1 flex items-center space-x-2 sm:pt-5">
+                        <Checkbox
+                          id={`controlled-${writer.tempId}`}
+                          checked={writer.isControlled}
+                          onCheckedChange={(checked) =>
+                            updateWriter(writer.tempId, 'isControlled', checked as boolean)
+                          }
+                        />
+                        <Label
+                          htmlFor={`controlled-${writer.tempId}`}
+                          className="font-normal cursor-pointer text-xs"
+                        >
+                          Right To Collect
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Advanced Mode Fields */}
+                {editorMode === 'advanced' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Writer Role</Label>
+                        <Select
+                          value={writer.role}
+                          onValueChange={(val) => updateWriter(writer.tempId, 'role', val)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {WRITER_ROLES.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                {role.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2 sm:pt-5">
                         <Checkbox
                           id={`controlled-adv-${writer.tempId}`}
                           checked={writer.isControlled}
@@ -711,9 +760,9 @@ export function WritersStep({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs">Mech. Ownership %</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Mech. Own %</Label>
                         <Input
                           type="number"
                           min={0}
@@ -731,10 +780,11 @@ export function WritersStep({
                             }
                           }}
                           placeholder="0"
+                          className="h-9"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Perf. Ownership %</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Perf. Own %</Label>
                         <Input
                           type="number"
                           min={0}
@@ -754,10 +804,11 @@ export function WritersStep({
                             }
                           }}
                           placeholder="0"
+                          className="h-9"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Mech. Collection %</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Mech. Coll %</Label>
                         <Input
                           type="number"
                           min={0}
@@ -777,10 +828,11 @@ export function WritersStep({
                             }
                           }}
                           placeholder="0"
+                          className="h-9"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Perf. Collection %</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Perf. Coll %</Label>
                         <Input
                           type="number"
                           min={0}
@@ -800,6 +852,7 @@ export function WritersStep({
                             }
                           }}
                           placeholder="0"
+                          className="h-9"
                         />
                       </div>
                     </div>
@@ -807,12 +860,13 @@ export function WritersStep({
                 )}
 
                 {!writer.isControlled && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="text-xs">Publisher (Optional)</Label>
                     <Input
                       value={writer.publisherName || ''}
                       onChange={(e) => updateWriter(writer.tempId, 'publisherName', e.target.value)}
                       placeholder="Their publisher's name"
+                      className="h-9"
                     />
                   </div>
                 )}
@@ -853,6 +907,35 @@ export function WritersStep({
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
+
+      {/* PRO Confirmation Dialog */}
+      <Dialog open={showProConfirmDialog} onOpenChange={setShowProConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-500" />
+              Confirm PRO Affiliation
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure this writer is <strong>not affiliated</strong> with a PRO?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Writers affiliated with PROs (like ASCAP, BMI, PRS, GEMA) need their CAE/IPI
+              number for proper royalty collection. Missing this information may delay payments.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowProConfirmDialog(false)}>
+              Go Back
+            </Button>
+            <Button onClick={handleConfirmNoProAffiliation}>
+              Yes, Not Affiliated
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

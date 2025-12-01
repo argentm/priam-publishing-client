@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type {
   WizardStep,
   WorkFormData,
@@ -76,14 +77,9 @@ export function useWorkWizard({ accountId, apiConfig, onSuccess }: UseWorkWizard
           `${apiConfigRef.current.getComposers(accountId)}?limit=100`
         );
         setExistingComposers(response.composers || []);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error
-          ? err.message
-          : typeof err === 'object' && err !== null && 'message' in err
-            ? (err as { message: string }).message
-            : JSON.stringify(err);
-        console.error('Failed to fetch composers:', errorMessage, err);
-        fetchedComposersRef.current = false; // Allow retry on error
+      } catch {
+        // Silent fail - allow retry on next render
+        fetchedComposersRef.current = false;
       } finally {
         setLoadingComposers(false);
       }
@@ -105,14 +101,9 @@ export function useWorkWizard({ accountId, apiConfig, onSuccess }: UseWorkWizard
           `${baseUrl}${separator}limit=100`
         );
         setExistingTracks(response.tracks || []);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error
-          ? err.message
-          : typeof err === 'object' && err !== null && 'message' in err
-            ? (err as { message: string }).message
-            : JSON.stringify(err);
-        console.error('Failed to fetch tracks:', errorMessage, err);
-        fetchedTracksRef.current = false; // Allow retry on error
+      } catch {
+        // Silent fail - allow retry on next render
+        fetchedTracksRef.current = false;
       } finally {
         setLoadingTracks(false);
       }
@@ -311,17 +302,16 @@ export function useWorkWizard({ accountId, apiConfig, onSuccess }: UseWorkWizard
         payload
       );
 
-      // Try to flush rights (non-critical)
+      // Try to flush rights (non-critical, silent fail)
       try {
         await apiClient.post(`/api/works/${response.work.id}/rights/flush-from-ip-chain`, {});
       } catch {
-        console.warn('Failed to auto-flush rights');
+        // Non-critical operation - silent fail
       }
 
       onSuccess?.(response.work.id);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create work';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to create work. Please try again.'));
       setSaving(false);
     }
   }, [

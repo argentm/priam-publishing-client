@@ -35,18 +35,12 @@ export default async function NewTrackPage({ params }: PageProps) {
 
     // Fetch account and available works in parallel
     const [accountResponse, worksResponse] = await Promise.all([
-      apiClient.get<AccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)).catch(err => {
-        console.error('Error fetching account:', err);
-        return null;
-      }),
-      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?account_id=${accountId}&limit=100`).catch(err => {
-        console.error('Error fetching works:', err);
-        return { works: [], total: 0 };
-      }),
+      apiClient.get<AccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)).catch(() => null),
+      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?account_id=${accountId}&limit=100`)
+        .catch(() => ({ works: [], total: 0 })),
     ]);
 
     if (!accountResponse?.account) {
-      console.error('Account not found');
       redirect(ROUTES.DASHBOARD);
     }
 
@@ -79,8 +73,7 @@ export default async function NewTrackPage({ params }: PageProps) {
         isNew={true}
       />
     );
-  } catch (error) {
-    console.error('Failed to load new track page:', error);
+  } catch {
     redirect(ROUTES.DASHBOARD);
   }
 }

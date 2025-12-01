@@ -429,6 +429,7 @@
      =================== */
 
   /* Base input/select/textarea styling */
+  /* iOS Safari zooms on inputs with font-size < 16px. Use 1rem (16px) on mobile */
   .form-control {
     display: block;
     width: 100%;
@@ -438,9 +439,16 @@
     background-color: #ffffff;
     color: hsl(220, 10%, 20%);
     padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    font-size: 1rem; /* 16px prevents iOS zoom on focus */
     border: 1px solid hsl(220, 13%, 85%);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* On tablet and up, use smaller font for compact UI */
+  @media (min-width: 768px) {
+    .form-control {
+      font-size: 0.875rem;
+    }
   }
 
   .form-control:hover:not(:disabled):not(:focus) {

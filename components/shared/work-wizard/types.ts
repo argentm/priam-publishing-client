@@ -55,7 +55,7 @@ export interface WorkDetailsData {
   projectId?: string;
   workLanguage?: string;
   workDescriptionCategory?: string;
-  duration?: number;
+  duration?: number | null;
   compositeType?: string;
   compositeCount: number;
   versionType?: string;
@@ -88,6 +88,9 @@ export interface WizardApiConfig {
 export interface WorkInfoStepProps {
   workData: WorkFormData;
   onWorkDataChange: (data: WorkFormData) => void;
+  detailsData: WorkDetailsData;
+  onDetailsDataChange: (data: WorkDetailsData) => void;
+  accountName?: string;
   onNext: () => void;
 }
 

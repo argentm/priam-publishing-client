@@ -12,11 +12,12 @@ import {
   Radio,
   FileText,
   UserCog,
-  Wallet,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Landmark,
+  ClipboardList,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
@@ -48,6 +49,16 @@ const navSections: NavSection[] = [
     title: 'Management',
     items: [
       {
+        name: 'Review Queue',
+        href: ROUTES.ADMIN_REVIEWS,
+        icon: ClipboardList,
+      },
+      {
+        name: 'Conflicts',
+        href: ROUTES.ADMIN_CONFLICTS,
+        icon: AlertTriangle,
+      },
+      {
         name: 'Users',
         href: ROUTES.ADMIN_USERS,
         icon: Users,
@@ -66,11 +77,6 @@ const navSections: NavSection[] = [
         name: 'Publishers',
         href: ROUTES.ADMIN_PUBLISHERS,
         icon: Landmark,
-      },
-      {
-        name: 'Payees',
-        href: ROUTES.ADMIN_PAYEES,
-        icon: Wallet,
       },
     ],
   },

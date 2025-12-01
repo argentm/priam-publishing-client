@@ -62,27 +62,17 @@ export default async function TrackDetailPage({ params }: PageProps) {
 
     // Fetch track, account, and available works in parallel
     const [trackResponse, accountResponse, worksResponse] = await Promise.all([
-      apiClient.get<TrackResponse>(`${API_ENDPOINTS.TRACKS}/${trackId}`).catch(err => {
-        console.error('Error fetching track:', err);
-        return null;
-      }),
-      apiClient.get<AccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)).catch(err => {
-        console.error('Error fetching account:', err);
-        return null;
-      }),
-      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?account_id=${accountId}&limit=100`).catch(err => {
-        console.error('Error fetching works:', err);
-        return { works: [], total: 0 };
-      }),
+      apiClient.get<TrackResponse>(`${API_ENDPOINTS.TRACKS}/${trackId}`).catch(() => null),
+      apiClient.get<AccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(accountId)).catch(() => null),
+      apiClient.get<WorksResponse>(`${API_ENDPOINTS.WORKS}?account_id=${accountId}&limit=100`)
+        .catch(() => ({ works: [], total: 0 })),
     ]);
 
     if (!trackResponse?.track) {
-      console.error('Track not found');
       redirect(ROUTES.WORKSPACE_TRACKS(accountId));
     }
 
     if (!accountResponse?.account) {
-      console.error('Account not found');
       redirect(ROUTES.DASHBOARD);
     }
 
@@ -92,7 +82,6 @@ export default async function TrackDetailPage({ params }: PageProps) {
 
     // Verify track belongs to this account
     if (track.account_id !== accountId) {
-      console.error('Track does not belong to this account');
       redirect(ROUTES.WORKSPACE_TRACKS(accountId));
     }
 
@@ -105,8 +94,7 @@ export default async function TrackDetailPage({ params }: PageProps) {
         isNew={false}
       />
     );
-  } catch (error) {
-    console.error('Failed to fetch track details:', error);
+  } catch {
     redirect(ROUTES.WORKSPACE_TRACKS(accountId));
   }
 }

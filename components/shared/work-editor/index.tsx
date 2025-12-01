@@ -41,6 +41,8 @@ import {
   Send,
   MoreHorizontal,
   Trash2,
+  Lock,
+  X,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -124,12 +126,21 @@ export function WorkEditor({
   const [work, setWork] = useState<Work>(initialWork);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('main');
 
-  // Can only submit if it's a draft
-  const canSubmitForReview = work.approval_status === 'draft' || !work.approval_status;
+  // Locked state: users cannot edit works under review or approved (admins can always edit)
+  const isLocked = !isAdmin && ['in_review', 'approved'].includes(work.approval_status || '');
+
+  // Can submit if it's a draft, rejected, or no status (new works)
+  const canSubmitForReview = work.approval_status === 'draft' || work.approval_status === 'rejected' || !work.approval_status;
+
+  // Can cancel within 5 minutes of submission
+  const canCancel = work.approval_status === 'in_review' &&
+    work.submitted_at &&
+    (Date.now() - new Date(work.submitted_at).getTime()) < 5 * 60 * 1000;
 
   // Duration state (minutes and seconds)
   const [durationMinutes, setDurationMinutes] = useState(
@@ -291,9 +302,11 @@ export function WorkEditor({
     setSuccessMessage(null);
 
     try {
-      const endpoint = `${API_ENDPOINTS.WORKS}/${work.id}`;
+      // First save any pending changes (without status - protected field)
+      const saveEndpoint = isAdmin
+        ? `${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`
+        : `${API_ENDPOINTS.WORKS}/${work.id}`;
 
-      // First save any pending changes, then update status to pending
       const updateData = {
         title: work.title.trim(),
         iswc: work.iswc || null,
@@ -316,15 +329,20 @@ export function WorkEditor({
         original_work_writer_first_name: work.original_work_writer_first_name || null,
         original_work_writer_last_name: work.original_work_writer_last_name || null,
         original_work_source: work.original_work_source || null,
-        approval_status: 'pending',
+        composers: writers.filter(w => w.composerId).map(w => w.composerId),
       };
 
-      await apiClient.put(endpoint, updateData);
-      setWork(prev => ({ ...prev, approval_status: 'pending' }));
+      await apiClient.put(saveEndpoint, updateData);
+
+      // Then submit for review using the dedicated endpoint
+      const submitEndpoint = API_ENDPOINTS.WORK_SUBMIT(work.id);
+      await apiClient.post(submitEndpoint, {});
+
+      setWork(prev => ({ ...prev, approval_status: 'in_review' }));
       setSuccessMessage('Work submitted for review! An admin will review it shortly.');
 
       if (onSave) {
-        onSave({ ...work, approval_status: 'pending' });
+        onSave({ ...work, approval_status: 'in_review' });
       }
 
       router.refresh();
@@ -335,6 +353,31 @@ export function WorkEditor({
       setError(errorMessage);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCancelSubmission = async () => {
+    if (!apiClient) return;
+
+    setCancelling(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const cancelEndpoint = API_ENDPOINTS.WORK_CANCEL_SUBMISSION(work.id);
+      await apiClient.post(cancelEndpoint, {});
+
+      setWork(prev => ({ ...prev, approval_status: 'draft', submitted_at: null }));
+      setSuccessMessage('Submission cancelled. Work is now a draft again.');
+
+      router.refresh();
+    } catch (err) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String((err as { message: string }).message)
+        : 'Failed to cancel submission';
+      setError(errorMessage);
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -360,7 +403,7 @@ export function WorkEditor({
                 asChild
                 className="mt-1 shrink-0 hover:bg-primary/10 hover:text-primary"
               >
-                <Link href={backUrl}>
+                <Link href={backUrl} aria-label="Go back">
                   <ArrowLeft className="w-5 h-5" />
                 </Link>
               </Button>
@@ -403,7 +446,24 @@ export function WorkEditor({
 
             {/* Desktop buttons */}
             <div className="hidden sm:flex items-center gap-3 shrink-0">
-              {canSubmitForReview && !isAdmin && (
+              {/* Cancel button - shown when within 5-minute window */}
+              {canCancel && !isAdmin && (
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSubmission}
+                  disabled={cancelling}
+                  className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                >
+                  {cancelling ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4 mr-2" />
+                  )}
+                  Cancel Submission
+                </Button>
+              )}
+              {/* Submit button - shown when not locked and not in cancel window */}
+              {canSubmitForReview && !isAdmin && !canCancel && (
                 <Button
                   variant="outline"
                   onClick={handleSubmitForReview}
@@ -418,38 +478,63 @@ export function WorkEditor({
                   Submit for Review
                 </Button>
               )}
-              <Button onClick={handleSave} disabled={saving || submitting} size="lg">
-                {saving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Save Changes
-              </Button>
+              {/* Save button - hidden when locked */}
+              {!isLocked && (
+                <Button onClick={handleSave} disabled={saving || submitting || cancelling} size="lg">
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              )}
             </div>
 
             {/* Mobile dropdown menu */}
             <div className="sm:hidden shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" aria-label="More options">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem
-                    onClick={handleSave}
-                    disabled={saving || submitting}
-                    className="cursor-pointer"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4 mr-2" />
-                    )}
-                    Save Changes
-                  </DropdownMenuItem>
-                  {canSubmitForReview && !isAdmin && (
+                  {/* Save - hidden when locked */}
+                  {!isLocked && (
+                    <DropdownMenuItem
+                      onClick={handleSave}
+                      disabled={saving || submitting || cancelling}
+                      className="cursor-pointer"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Save Changes
+                    </DropdownMenuItem>
+                  )}
+                  {/* Cancel - shown when in cancel window */}
+                  {canCancel && !isAdmin && (
+                    <>
+                      {!isLocked && <DropdownMenuSeparator />}
+                      <DropdownMenuItem
+                        onClick={handleCancelSubmission}
+                        disabled={cancelling}
+                        className="cursor-pointer text-destructive"
+                      >
+                        {cancelling ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4 mr-2" />
+                        )}
+                        Cancel Submission
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {/* Submit - shown when can submit and not in cancel window */}
+                  {canSubmitForReview && !isAdmin && !canCancel && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -486,6 +571,18 @@ export function WorkEditor({
           <div className="mb-6 flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {/* Locked Banner */}
+        {isLocked && (
+          <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-700 dark:text-amber-300">
+            <Lock className="w-5 h-5 shrink-0" />
+            <span>
+              {work.approval_status === 'in_review'
+                ? 'This work is under review and cannot be edited.'
+                : 'This work is approved and cannot be edited.'}
+            </span>
           </div>
         )}
 
@@ -557,6 +654,7 @@ export function WorkEditor({
                           onChange={(e) => updateField('title', e.target.value)}
                           placeholder="Enter work title"
                           className="text-lg"
+                          disabled={isLocked}
                         />
                       </div>
 
@@ -570,6 +668,7 @@ export function WorkEditor({
                             onChange={(e) => updateField('iswc', e.target.value || null)}
                             placeholder="T-XXX.XXX.XXX-X"
                             className="font-mono"
+                            disabled={isLocked}
                           />
                         </div>
                         <div className="space-y-2">
@@ -583,6 +682,7 @@ export function WorkEditor({
                                 onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
                                 className="pr-12"
                                 placeholder="0"
+                                disabled={isLocked}
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                                 min
@@ -598,6 +698,7 @@ export function WorkEditor({
                                 onChange={(e) => setDurationSeconds(Math.min(59, parseInt(e.target.value) || 0))}
                                 className="pr-12"
                                 placeholder="0"
+                                disabled={isLocked}
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                                 sec
@@ -614,6 +715,7 @@ export function WorkEditor({
                           <Select
                             value={work.work_language || ''}
                             onValueChange={(value) => updateField('work_language', value || null)}
+                            disabled={isLocked}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select language" />
@@ -632,6 +734,7 @@ export function WorkEditor({
                           <Select
                             value={work.work_description_category || ''}
                             onValueChange={(value) => updateField('work_description_category', value || null)}
+                            disabled={isLocked}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
@@ -666,6 +769,7 @@ export function WorkEditor({
                           size="sm"
                           onClick={() => setShowWritersSheet(true)}
                           className="hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                          disabled={isLocked}
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Manage Writers
@@ -729,6 +833,8 @@ export function WorkEditor({
                                   size="icon"
                                   className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   onClick={() => removeWriter(writer.tempId)}
+                                  aria-label="Remove writer"
+                                  disabled={isLocked}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -749,6 +855,7 @@ export function WorkEditor({
                             size="sm"
                             className="mt-5"
                             onClick={() => setShowWritersSheet(true)}
+                            disabled={isLocked}
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Add First Writer
@@ -779,6 +886,7 @@ export function WorkEditor({
                             onChange={(e) => updateField('tunecode', e.target.value || null)}
                             placeholder="Enter tunecode"
                             className="font-mono"
+                            disabled={isLocked}
                           />
                         </div>
                         <div className="space-y-2">
@@ -788,6 +896,7 @@ export function WorkEditor({
                             type="date"
                             value={work.copyright_date || ''}
                             onChange={(e) => updateField('copyright_date', e.target.value || null)}
+                            disabled={isLocked}
                           />
                         </div>
                       </div>
@@ -798,6 +907,7 @@ export function WorkEditor({
                           <Select
                             value={work.version_type || 'original'}
                             onValueChange={(value) => updateField('version_type', value || null)}
+                            disabled={isLocked}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -816,6 +926,7 @@ export function WorkEditor({
                           <Select
                             value={work.arrangement_type || ''}
                             onValueChange={(value) => updateField('arrangement_type', value || null)}
+                            disabled={isLocked}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select type" />
@@ -837,6 +948,7 @@ export function WorkEditor({
                           <Select
                             value={work.composite_type || 'none'}
                             onValueChange={(value) => updateField('composite_type', value === 'none' ? null : value)}
+                            disabled={isLocked}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -859,6 +971,7 @@ export function WorkEditor({
                               min={0}
                               value={work.composite_count || 0}
                               onChange={(e) => updateField('composite_count', parseInt(e.target.value) || 0)}
+                              disabled={isLocked}
                             />
                           </div>
                         )}
@@ -871,6 +984,7 @@ export function WorkEditor({
                           value={work.label_copy || ''}
                           onChange={(e) => updateField('label_copy', e.target.value || null)}
                           placeholder="Copyright notice for labels"
+                          disabled={isLocked}
                         />
                       </div>
 
@@ -883,6 +997,7 @@ export function WorkEditor({
                           placeholder="Additional notes about this work..."
                           rows={4}
                           className="resize-none"
+                          disabled={isLocked}
                         />
                       </div>
                     </div>
@@ -908,6 +1023,7 @@ export function WorkEditor({
                                 value={work.original_work_title || ''}
                                 onChange={(e) => updateField('original_work_title', e.target.value || null)}
                                 placeholder="Original work title"
+                                disabled={isLocked}
                               />
                             </div>
                             <div className="space-y-2">
@@ -918,6 +1034,7 @@ export function WorkEditor({
                                 onChange={(e) => updateField('original_iswc', e.target.value || null)}
                                 placeholder="T-XXX.XXX.XXX-X"
                                 className="font-mono"
+                                disabled={isLocked}
                               />
                             </div>
                           </div>
@@ -928,6 +1045,7 @@ export function WorkEditor({
                                 id="original_writer_first"
                                 value={work.original_work_writer_first_name || ''}
                                 onChange={(e) => updateField('original_work_writer_first_name', e.target.value || null)}
+                                disabled={isLocked}
                               />
                             </div>
                             <div className="space-y-2">
@@ -936,6 +1054,7 @@ export function WorkEditor({
                                 id="original_writer_last"
                                 value={work.original_work_writer_last_name || ''}
                                 onChange={(e) => updateField('original_work_writer_last_name', e.target.value || null)}
+                                disabled={isLocked}
                               />
                             </div>
                           </div>
@@ -946,6 +1065,7 @@ export function WorkEditor({
                               value={work.original_work_source || ''}
                               onChange={(e) => updateField('original_work_source', e.target.value || null)}
                               placeholder="Where this work originates from"
+                              disabled={isLocked}
                             />
                           </div>
                         </div>
@@ -967,14 +1087,16 @@ export function WorkEditor({
                         <label
                           htmlFor="priority"
                           className={cn(
-                            'flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors',
-                            work.priority ? 'bg-primary/5 border-primary/30' : 'hover:bg-muted/50'
+                            'flex items-center gap-3 p-4 rounded-lg border transition-colors',
+                            isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                            work.priority ? 'bg-primary/5 border-primary/30' : !isLocked && 'hover:bg-muted/50'
                           )}
                         >
                           <Checkbox
                             id="priority"
                             checked={work.priority || false}
                             onCheckedChange={(checked) => updateField('priority', checked === true)}
+                            disabled={isLocked}
                           />
                           <div>
                             <p className="font-medium text-sm">Priority</p>
@@ -985,14 +1107,16 @@ export function WorkEditor({
                         <label
                           htmlFor="production_library"
                           className={cn(
-                            'flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors',
-                            work.production_library ? 'bg-primary/5 border-primary/30' : 'hover:bg-muted/50'
+                            'flex items-center gap-3 p-4 rounded-lg border transition-colors',
+                            isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                            work.production_library ? 'bg-primary/5 border-primary/30' : !isLocked && 'hover:bg-muted/50'
                           )}
                         >
                           <Checkbox
                             id="production_library"
                             checked={work.production_library || false}
                             onCheckedChange={(checked) => updateField('production_library', checked === true)}
+                            disabled={isLocked}
                           />
                           <div>
                             <p className="font-medium text-sm">Library</p>
@@ -1003,14 +1127,16 @@ export function WorkEditor({
                         <label
                           htmlFor="grand_rights"
                           className={cn(
-                            'flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors',
-                            work.grand_rights ? 'bg-primary/5 border-primary/30' : 'hover:bg-muted/50'
+                            'flex items-center gap-3 p-4 rounded-lg border transition-colors',
+                            isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                            work.grand_rights ? 'bg-primary/5 border-primary/30' : !isLocked && 'hover:bg-muted/50'
                           )}
                         >
                           <Checkbox
                             id="grand_rights"
                             checked={work.grand_rights || false}
                             onCheckedChange={(checked) => updateField('grand_rights', checked === true)}
+                            disabled={isLocked}
                           />
                           <div>
                             <p className="font-medium text-sm">Grand Rights</p>
@@ -1044,16 +1170,18 @@ export function WorkEditor({
                       'font-medium',
                       work.approval_status === 'approved'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : work.approval_status === 'pending'
+                        : work.approval_status === 'in_review'
                           ? 'bg-amber-50 text-amber-700 border-amber-200'
                           : work.approval_status === 'rejected'
                             ? 'bg-red-50 text-red-700 border-red-200'
                             : 'bg-slate-50 text-slate-600 border-slate-200'
                     )}
                   >
-                    {work.approval_status
-                      ? work.approval_status.charAt(0).toUpperCase() + work.approval_status.slice(1)
-                      : 'Invalid'}
+                    {work.approval_status === 'in_review'
+                      ? 'In Review'
+                      : work.approval_status
+                        ? work.approval_status.charAt(0).toUpperCase() + work.approval_status.slice(1)
+                        : 'Draft'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">

@@ -32,13 +32,9 @@ export default async function NewWorkPage({ params }: PageProps) {
     const apiClient = await createServerApiClient();
     const response = await apiClient.get<DashboardAccountResponse>(
       `${API_ENDPOINTS.DASHBOARD_ACCOUNT(id)}`
-    ).catch(err => {
-      console.error(`Error fetching account details for ${id}:`, err);
-      return null;
-    });
+    ).catch(() => null);
 
     if (!response?.account) {
-      console.error(`Account ${id} not found or access denied.`);
       redirect('/dashboard');
     }
 
@@ -52,11 +48,10 @@ export default async function NewWorkPage({ params }: PageProps) {
     );
   } catch (error) {
     // This catch block handles redirect() which throws an error in Next.js
-    // We need to re-throw it if it's a redirect, otherwise log and redirect
-    if ((error as any)?.message === 'NEXT_REDIRECT') {
+    // We need to re-throw it if it's a redirect, otherwise redirect
+    if ((error as Error)?.message === 'NEXT_REDIRECT') {
       throw error;
     }
-    console.error('Unexpected error in NewWorkPage:', error);
     redirect('/dashboard');
   }
 }

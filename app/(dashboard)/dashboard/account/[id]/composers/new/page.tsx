@@ -25,8 +25,7 @@ export default async function NewComposerPage({ params }: PageProps) {
     const apiClient = await createServerApiClient();
     const response = await apiClient.get<AccountResponse>(API_ENDPOINTS.ACCOUNT(accountId));
     account = response.account;
-  } catch (error) {
-    console.error('Failed to fetch account:', error);
+  } catch {
     redirect(ROUTES.DASHBOARD);
   }
 

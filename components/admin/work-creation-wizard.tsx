@@ -222,11 +222,14 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
                 value={accountSearch}
                 onChange={(e) => setAccountSearch(e.target.value)}
                 className="pl-10"
+                aria-label="Search accounts"
               />
               {accountSearch && (
                 <button
+                  type="button"
                   onClick={() => setAccountSearch('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -291,6 +294,9 @@ export function WorkCreationWizard({ accounts }: WorkCreationWizardProps) {
         <WorkInfoStep
           workData={wizard.workData}
           onWorkDataChange={wizard.setWorkData}
+          detailsData={wizard.detailsData}
+          onDetailsDataChange={wizard.setDetailsData}
+          accountName={selectedAccount?.name}
           onNext={wizard.goToWriters}
         />
       )}

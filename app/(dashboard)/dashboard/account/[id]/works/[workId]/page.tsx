@@ -38,8 +38,7 @@ export default async function WorkDetailPage({ params }: PageProps) {
         backUrl={ROUTES.WORKSPACE_WORKS(id)}
       />
     );
-  } catch (error) {
-    console.error('Failed to fetch work:', error);
+  } catch {
     redirect(ROUTES.WORKSPACE_WORKS(id));
   }
 }

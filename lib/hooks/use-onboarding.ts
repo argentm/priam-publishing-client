@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type {
   OnboardingStatus,
   OnboardingStatusResponse,
@@ -68,8 +69,7 @@ export function useOnboarding(): UseOnboardingReturn {
       );
       setStatus(response);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch onboarding status';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to load onboarding status. Please try again.'));
     } finally {
       setIsLoading(false);
     }

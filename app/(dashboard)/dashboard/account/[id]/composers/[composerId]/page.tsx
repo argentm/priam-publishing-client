@@ -60,8 +60,7 @@ export default async function EditComposerPage({ params }: PageProps) {
 
     account = accountResponse.account;
     composer = composersResponse.composers.find((c) => c.id === composerId) || null;
-  } catch (error) {
-    console.error('Failed to fetch data:', error);
+  } catch {
     redirect(ROUTES.DASHBOARD);
   }
 

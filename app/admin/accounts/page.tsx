@@ -62,7 +62,7 @@ export default async function AdminAccountsPage({ searchParams }: PageProps) {
               </CardDescription>
             </div>
             <Button asChild>
-              <Link href={ROUTES.ACCOUNT_NEW} className="flex items-center gap-2">
+              <Link href={ROUTES.ADMIN_ACCOUNT_NEW} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Add Account
               </Link>

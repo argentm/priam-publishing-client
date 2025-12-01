@@ -81,9 +81,8 @@ export default function VerifyIdentityPage() {
             await refetch();
             router.push(ROUTES.ONBOARDING_COMPLETE);
           }
-        } catch (err) {
-          // Silent fail on status check
-          console.error('Failed to check verification status:', err);
+        } catch {
+          // Silent fail on status check - expected during polling
         }
       };
 

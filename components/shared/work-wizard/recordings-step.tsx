@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import {
   Dialog,
   DialogContent,
@@ -86,8 +87,7 @@ export function RecordingsStep({
       setShowNewTrackDialog(false);
       setNewTrackData({ title: '', isrc: '', artist: '' });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create track';
-      setTrackError(errorMessage);
+      setTrackError(sanitizeApiError(err, 'Failed to create track. Please try again.'));
     } finally {
       setCreatingTrack(false);
     }
@@ -113,6 +113,7 @@ export function RecordingsStep({
                 value={trackSearch}
                 onChange={(e) => setTrackSearch(e.target.value)}
                 className="pl-10"
+                aria-label="Search tracks"
               />
             </div>
             <Dialog open={showNewTrackDialog} onOpenChange={setShowNewTrackDialog}>
@@ -279,6 +280,7 @@ export function RecordingsStep({
                   size="icon"
                   onClick={() => removeTrack(track.id)}
                   className="text-muted-foreground hover:text-destructive"
+                  aria-label="Remove track"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

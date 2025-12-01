@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/constants';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type { SpotifySuggestion, AccountWithSpotify } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,13 +74,7 @@ export function SpotifySuggestions({ account }: SpotifySuggestionsProps) {
       setSuggestions(response.suggestions || []);
       setFilteredSuggestions(response.suggestions || []);
     } catch (err) {
-      // Handle ApiError objects from ApiClient
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : err instanceof Error
-          ? err.message
-          : 'Failed to load suggestions';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to load suggestions. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -124,18 +119,18 @@ export function SpotifySuggestions({ account }: SpotifySuggestionsProps) {
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Disc className="w-5 h-5 text-green-500" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Disc className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 shrink-0" />
                 Song Suggestions
               </CardTitle>
-              <CardDescription>
-                Import songs from {account.spotify_artist_name}&apos;s Spotify catalog
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Import songs from {account.spotify_artist_name}&apos;s catalog
               </CardDescription>
             </div>
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="w-fit text-xs">
               {filteredSuggestions.length} available
             </Badge>
           </div>
@@ -174,7 +169,7 @@ export function SpotifySuggestions({ account }: SpotifySuggestionsProps) {
               </div>
 
               {/* Song List */}
-              <div className="h-[400px] overflow-y-auto pr-4">
+              <div className="h-[350px] sm:h-[400px] overflow-y-auto pr-2 sm:pr-4">
                 <div className="space-y-2">
                   {filteredSuggestions.slice(0, displayLimit).map((track) => {
                     const isImported = importedTracks.has(track.spotify_track_id);
@@ -182,75 +177,93 @@ export function SpotifySuggestions({ account }: SpotifySuggestionsProps) {
                     return (
                       <div
                         key={track.spotify_track_id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                        className={`p-2 sm:p-3 rounded-lg border transition-colors ${
                           isImported
                             ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900'
                             : 'hover:bg-muted/50'
                         }`}
                       >
-                        {/* Album Art */}
-                        {track.album_image_url ? (
-                          <Image
-                            src={track.album_image_url}
-                            alt={track.album_name}
-                            width={48}
-                            height={48}
-                            className="rounded object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                            <Disc className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-
-                        {/* Track Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{track.title}</p>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="truncate">{track.album_name}</span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 shrink-0">
-                              <Clock className="w-3 h-3" />
-                              {formatDuration(track.duration_seconds)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          {track.isrc && (
-                            <Badge variant="outline" className="text-xs hidden sm:flex">
-                              ISRC
-                            </Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            asChild
-                          >
-                            <a
-                              href={track.spotify_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Open in Spotify"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </Button>
-                          {isImported ? (
-                            <Button variant="ghost" size="sm" disabled>
-                              <CheckCircle2 className="w-4 h-4 mr-1 text-green-600" />
-                              Imported
-                            </Button>
+                        {/* Mobile: Stacked layout, Desktop: Horizontal */}
+                        <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                          {/* Album Art */}
+                          {track.album_image_url ? (
+                            <Image
+                              src={track.album_image_url}
+                              alt={track.album_name}
+                              width={40}
+                              height={40}
+                              className="rounded object-cover shrink-0 w-10 h-10 sm:w-12 sm:h-12"
+                            />
                           ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => setSelectedTrack(track)}
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              Import
-                            </Button>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded bg-muted flex items-center justify-center">
+                              <Disc className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+                            </div>
                           )}
+
+                          {/* Track Info - Takes remaining space */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm sm:text-base truncate">{track.title}</p>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-muted-foreground">
+                              <span className="truncate max-w-[120px] sm:max-w-none">{track.album_name}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="flex items-center gap-1 shrink-0">
+                                <Clock className="w-3 h-3" />
+                                {formatDuration(track.duration_seconds)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Desktop Actions */}
+                          <div className="hidden sm:flex items-center gap-2 shrink-0">
+                            {track.isrc && (
+                              <Badge variant="outline" className="text-xs">
+                                ISRC
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                            >
+                              <a
+                                href={track.spotify_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open in Spotify"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </Button>
+                            {isImported ? (
+                              <Button variant="ghost" size="sm" disabled>
+                                <CheckCircle2 className="w-4 h-4 mr-1 text-green-600" />
+                                Imported
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedTrack(track)}
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Import
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Mobile: Compact action button */}
+                          <div className="sm:hidden shrink-0">
+                            {isImported ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="h-8 px-2"
+                                onClick={() => setSelectedTrack(track)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );

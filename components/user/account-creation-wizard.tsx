@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type { SpotifyArtist } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -138,10 +139,7 @@ export function AccountCreationWizard({
       );
       setSearchResults(response.artists || []);
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : 'Failed to search Spotify';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to search Spotify'));
     } finally {
       setIsSearching(false);
     }
@@ -170,10 +168,7 @@ export function AccountCreationWizard({
         setSelectedArtist(response.artist);
       }
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : 'Failed to find artist';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to find artist'));
     } finally {
       setIsSearching(false);
     }
@@ -313,10 +308,7 @@ export function AccountCreationWizard({
         router.refresh();
       }
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : 'Failed to create account';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to create account'));
       setIsLoading(false);
     }
   };

@@ -43,9 +43,10 @@ async function getTrack(id: string): Promise<Track | null> {
 export default async function TrackDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const track = await getTrack(params.id);
+  const { id } = await params;
+  const track = await getTrack(id);
 
   if (!track) {
     redirect('/admin/tracks');

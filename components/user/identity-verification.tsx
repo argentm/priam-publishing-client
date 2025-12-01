@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { ApiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/constants';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -59,9 +60,8 @@ export function IdentityVerification() {
       const data = await apiClient.get<VerificationStatus>(API_ENDPOINTS.VERIFICATION_STATUS);
       setStatus(data);
       setError(null);
-    } catch (err: any) {
-      console.error('Failed to fetch verification status:', err);
-      setError(err.message || 'Failed to load verification status');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to load verification status. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -108,9 +108,8 @@ export function IdentityVerification() {
       setTimeout(() => {
         fetchStatus();
       }, 2000);
-    } catch (err: any) {
-      console.error('Verification error:', err);
-      setError(err.message || 'Failed to start verification');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to start verification. Please try again.'));
     } finally {
       setVerifying(false);
     }

@@ -69,7 +69,6 @@ const CATEGORIES = [
   'Arranger',
   'Adapter',
   'Translator',
-  'Income Participant'
 ];
 
 export function IpChainEditor({ initialChain, onChange, readOnly = false }: IpChainEditorProps) {

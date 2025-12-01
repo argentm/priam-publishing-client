@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/constants';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type { SpotifyArtist, AccountWithSpotify } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,13 +118,7 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
         setSearchResults(response.artists || []);
       }
     } catch (err) {
-      // Handle ApiError objects from ApiClient
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : err instanceof Error
-          ? err.message
-          : 'Failed to search artists';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to search artists. Please try again.'));
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -146,12 +141,7 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
       setSearchResults([]);
       router.refresh();
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : err instanceof Error
-          ? err.message
-          : 'Failed to link artist';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to link artist. Please try again.'));
     } finally {
       setIsLinking(false);
     }
@@ -170,12 +160,7 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
       });
       router.refresh();
     } catch (err) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? String((err as { message: string }).message)
-        : err instanceof Error
-          ? err.message
-          : 'Failed to unlink artist';
-      setError(errorMessage);
+      setError(sanitizeApiError(err, 'Failed to unlink artist. Please try again.'));
     } finally {
       setIsUnlinking(false);
     }
@@ -210,30 +195,35 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
           {isLinked ? (
             <div className="space-y-4">
               {/* Linked Artist Display */}
-              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                {account.spotify_artist_image_url ? (
-                  <Image
-                    src={account.spotify_artist_image_url}
-                    alt={account.spotify_artist_name || 'Artist'}
-                    width={64}
-                    height={64}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Music2 className="w-8 h-8 text-green-500" />
+              <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                {/* Artist info row */}
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {account.spotify_artist_image_url ? (
+                    <Image
+                      src={account.spotify_artist_image_url}
+                      alt={account.spotify_artist_name || 'Artist'}
+                      width={56}
+                      height={56}
+                      className="rounded-full object-cover shrink-0 w-12 h-12 sm:w-14 sm:h-14"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <Music2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base sm:text-lg truncate">{account.spotify_artist_name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Linked {account.spotify_linked_at && new Date(account.spotify_linked_at).toLocaleDateString()}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{account.spotify_artist_name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Linked {account.spotify_linked_at && new Date(account.spotify_linked_at).toLocaleDateString()}
-                  </p>
                 </div>
-                <div className="flex gap-2">
+                {/* Actions row - stacked on mobile */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     asChild
                   >
                     <a
@@ -241,13 +231,14 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <ExternalLink className="w-4 h-4 mr-1" />
-                      View
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View on Spotify
                     </a>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={handleUnlink}
                     disabled={isUnlinking}
                   >
@@ -255,8 +246,8 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <Unlink className="w-4 h-4 mr-1" />
-                        Unlink
+                        <Unlink className="w-4 h-4 mr-2" />
+                        Unlink Artist
                       </>
                     )}
                   </Button>
@@ -303,6 +294,7 @@ export function SpotifyLink({ account }: SpotifyLinkProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                aria-label="Search Spotify artists"
               />
               <Button onClick={handleSearch} disabled={isSearching || !apiClient}>
                 {isSearching ? (

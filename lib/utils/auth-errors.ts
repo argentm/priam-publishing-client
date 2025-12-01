@@ -25,9 +25,11 @@ const GENERIC_MESSAGES = {
   signup: 'Unable to create account. Please try again or use a different email address.',
   passwordReset:
     'If an account exists with this email, you will receive a password reset link.',
+  emailResend:
+    'If an account exists with this email, a new verification link has been sent.',
 };
 
-export type AuthErrorContext = 'login' | 'signup' | 'passwordReset';
+export type AuthErrorContext = 'login' | 'signup' | 'passwordReset' | 'emailResend';
 
 /**
  * Sanitizes authentication error messages to prevent user enumeration.

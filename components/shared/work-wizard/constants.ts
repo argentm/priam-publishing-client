@@ -115,6 +115,35 @@ export const COMPOSITE_TYPES = [
 // System Priam Publisher ID (for controlled writers)
 export const SYSTEM_PRIAM_PUBLISHER_ID = '00000000-0000-0000-0000-000000000001';
 
+// Territories for IP Chain
+export const TERRITORIES = [
+  { code: 'World', name: 'World (All Territories)' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'IN', name: 'India' },
+  { code: 'ZA', name: 'South Africa' },
+] as const;
+
 // Default work form data
 export const DEFAULT_WORK_FORM_DATA = {
   title: '',

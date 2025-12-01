@@ -102,19 +102,12 @@ export default async function TracksPage({ params, searchParams }: PageProps) {
     // Fetch account and tracks in parallel
     const [accountResponse, tracksResponse] = await Promise.all([
       apiClient.get<DashboardAccountResponse>(API_ENDPOINTS.DASHBOARD_ACCOUNT(id))
-        .catch(err => {
-          console.error('Error fetching account:', err);
-          return null;
-        }),
+        .catch(() => null),
       apiClient.get<TracksResponse>(`${API_ENDPOINTS.TRACKS}?${queryParams.toString()}`)
-        .catch(err => {
-          console.error('Error fetching tracks:', err);
-          return { tracks: [], total: 0 };
-        }),
+        .catch(() => ({ tracks: [], total: 0 })),
     ]);
 
     if (!accountResponse?.account) {
-      console.error('Account not found or access denied');
       redirect('/dashboard');
     }
 
@@ -364,8 +357,7 @@ export default async function TracksPage({ params, searchParams }: PageProps) {
         </Card>
       </div>
     );
-  } catch (error) {
-    console.error('Failed to fetch tracks:', error);
+  } catch {
     redirect('/dashboard');
   }
 }

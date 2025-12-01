@@ -111,7 +111,7 @@ export default async function AccountPage({ params }: PageProps) {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <Link href={ROUTES.ACCOUNT_WORKS_NEW(id)} className="block">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="p-6">
@@ -174,9 +174,9 @@ export default async function AccountPage({ params }: PageProps) {
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Recent Works */}
-          <Card className="lg:col-span-2">
+          <Card className="md:col-span-2 lg:col-span-2">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -279,8 +279,8 @@ export default async function AccountPage({ params }: PageProps) {
         </div>
       </div>
     );
-  } catch (error) {
-    console.error('Failed to fetch account:', error);
+  } catch {
+    // Silently redirect on error - don't expose error details
     redirect('/dashboard');
   }
 }

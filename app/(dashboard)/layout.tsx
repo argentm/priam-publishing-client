@@ -4,7 +4,7 @@ import { UserLayout } from '@/components/layout/user-layout';
 import { ROUTES, API_ENDPOINTS } from '@/lib/constants';
 import { isAdmin } from '@/lib/utils/admin';
 import { createServerApiClient } from '@/lib/api/server-client';
-import type { User, Account, DashboardData } from '@/lib/types';
+import type { User, DashboardData } from '@/lib/types';
 
 async function getUserWithAdminStatus(): Promise<User | null> {
   try {

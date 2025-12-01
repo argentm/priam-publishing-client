@@ -55,8 +55,7 @@ export default async function SettingsPage({ params }: PageProps) {
         currentUserId={user.id}
       />
     );
-  } catch (error) {
-    console.error('Failed to fetch account settings:', error);
+  } catch {
     redirect('/dashboard');
   }
 }

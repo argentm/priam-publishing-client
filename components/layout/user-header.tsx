@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User, Menu, ChevronRight, LogOut, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import { MobileUserSidebar } from './user-sidebar';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
+import { NotificationBell } from '@/components/notifications';
 
 interface UserHeaderProps {
   user: UserType;
@@ -116,8 +117,16 @@ export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderPr
     setMounted(true);
   }, []);
 
-  const pageInfo = getPageInfo(pathname, currentAccount?.name);
-  const breadcrumbs = getBreadcrumbs(pathname, currentAccount?.name);
+  // Memoize derived values to prevent recalculation on every render
+  const pageInfo = useMemo(
+    () => getPageInfo(pathname, currentAccount?.name),
+    [pathname, currentAccount?.name]
+  );
+
+  const breadcrumbs = useMemo(
+    () => getBreadcrumbs(pathname, currentAccount?.name),
+    [pathname, currentAccount?.name]
+  );
 
   return (
     <header className="bg-white sticky top-0 z-30 border-b border-border/50">
@@ -170,7 +179,11 @@ export function UserHeader({ user, currentAccount, accounts = [] }: UserHeaderPr
         </div>
 
         {/* User Info and Actions */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {/* Notification Bell */}
+          {mounted && (
+            <NotificationBell accountId={currentAccount?.id} />
+          )}
           {mounted ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -124,13 +124,14 @@ function AccountSwitcher({ accounts, currentAccount, isCollapsed }: AccountSwitc
     setMounted(true);
   }, []);
 
-  const handleAccountSelect = (account: Account) => {
+  // Stable reference for account selection
+  const handleAccountSelect = useCallback((account: Account) => {
     // Store as last selected account
     setLastAccountId(account.id);
     // Navigate to the selected account's workspace
     router.push(ROUTES.WORKSPACE(account.id));
     setOpen(false);
-  };
+  }, [router]);
 
   // Render placeholder during SSR to prevent hydration mismatch
   if (!mounted) {
@@ -265,36 +266,44 @@ interface UserSidebarProps {
   currentAccount?: Account | null;
 }
 
-const UserNavContent = ({ 
-  onClose, 
-  isCollapsed, 
+const UserNavContent = ({
+  onClose,
+  isCollapsed,
   onToggleCollapse,
   accounts,
   currentAccount,
 }: UserSidebarProps) => {
   const pathname = usePathname();
-  const navSections = getNavSections(currentAccount?.id);
 
-  const isActive = (href: string | ((id: string) => string)) => {
+  // Memoize nav sections to prevent recreation on every render
+  const navSections = useMemo(
+    () => getNavSections(currentAccount?.id),
+    [currentAccount?.id]
+  );
+
+  // Stable reference for active state check
+  const isActive = useCallback((href: string | ((id: string) => string)) => {
     const resolvedHref = typeof href === 'function' ? (currentAccount ? href(currentAccount.id) : '') : href;
     if (resolvedHref === ROUTES.DASHBOARD) {
       return pathname === ROUTES.DASHBOARD;
     }
     return pathname.startsWith(resolvedHref);
-  };
+  }, [pathname, currentAccount]);
 
-  const handleLinkClick = () => {
+  // Stable reference for link click handler
+  const handleLinkClick = useCallback(() => {
     if (onClose) {
       onClose();
     }
-  };
+  }, [onClose]);
 
-  const getHref = (item: NavItem): string => {
+  // Stable reference for href resolution
+  const getHref = useCallback((item: NavItem): string => {
     if (typeof item.href === 'function') {
       return currentAccount ? item.href(currentAccount.id) : '#';
     }
     return item.href;
-  };
+  }, [currentAccount]);
 
   return (
     <>

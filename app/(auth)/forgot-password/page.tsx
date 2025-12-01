@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTES, API_ENDPOINTS } from '@/lib/constants';
-import { Music2, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -43,7 +44,7 @@ export default function ForgotPasswordPage() {
 
       // Always show success (even if email doesn't exist) to prevent enumeration
       setSuccess(true);
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
@@ -61,8 +62,13 @@ export default function ForgotPasswordPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={32}
+                height={32}
+              />
             </div>
             <span className="text-2xl font-bold text-white">Priam</span>
           </div>
@@ -87,8 +93,13 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={24}
+                height={24}
+              />
             </div>
             <span className="text-2xl font-bold">Priam</span>
           </div>

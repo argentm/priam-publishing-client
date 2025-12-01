@@ -4,17 +4,19 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/lib/constants';
 import { sanitizeAuthError, getErrorMessage } from '@/lib/utils/auth-errors';
 import { inviteStorage } from '@/lib/utils/invite-storage';
-import { Music2, Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
@@ -82,8 +84,13 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={32}
+                height={32}
+              />
             </div>
             <span className="text-2xl font-bold text-white">Priam</span>
           </div>
@@ -122,8 +129,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={24}
+                height={24}
+              />
             </div>
             <span className="text-2xl font-bold">Priam</span>
           </div>
@@ -142,6 +154,7 @@ export default function LoginPage() {
             className="w-full h-12 gap-3 text-base font-medium border-2 hover:bg-[#1DB954]/5 hover:border-[#1DB954] hover:text-[#1DB954] transition-all"
             onClick={handleSpotifySignIn}
             disabled={spotifyLoading}
+            aria-label="Sign in with Spotify"
           >
             {spotifyLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -201,16 +214,26 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="h-12"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="h-12 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <Button

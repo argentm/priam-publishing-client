@@ -24,14 +24,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Plus,
   Trash2,
   UserCircle,
@@ -42,7 +34,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Writer, Composer, EditorMode } from '@/components/shared/work-wizard/types';
-import { PRO_LIST, WRITER_ROLES } from '@/components/shared/work-wizard/constants';
+import { WRITER_ROLES } from '@/components/shared/work-wizard/constants';
+import { AddComposerDialog } from '@/components/shared/add-composer-dialog';
 
 interface WritersSheetProps {
   open: boolean;
@@ -70,48 +63,6 @@ export function WritersSheet({
   const [editorMode, setEditorMode] = useState<EditorMode>('simple');
   const [showNewComposerDialog, setShowNewComposerDialog] = useState(false);
   const [creatingComposer, setCreatingComposer] = useState(false);
-  const [showProConfirmDialog, setShowProConfirmDialog] = useState(false);
-  const [newComposerData, setNewComposerData] = useState({
-    name: '',
-    firstName: '',
-    surname: '',
-    cae: '',
-    mainPro: '',
-    controlled: true,
-  });
-
-  // Reset form when dialog closes
-  const handleDialogChange = (open: boolean) => {
-    setShowNewComposerDialog(open);
-    if (!open) {
-      setNewComposerData({
-        name: '',
-        firstName: '',
-        surname: '',
-        cae: '',
-        mainPro: '',
-        controlled: true,
-      });
-    }
-  };
-
-  // Check if PRO info is missing
-  const isMissingProInfo = !newComposerData.cae.trim() && !newComposerData.mainPro;
-
-  // Handle add writer click - show confirmation if no PRO info
-  const handleAddWriterClick = () => {
-    if (isMissingProInfo) {
-      setShowProConfirmDialog(true);
-    } else {
-      handleAddNewComposer();
-    }
-  };
-
-  // Confirm adding without PRO
-  const handleConfirmNoProAffiliation = () => {
-    setShowProConfirmDialog(false);
-    handleAddNewComposer();
-  };
 
   // Initialize API client and fetch composers
   useEffect(() => {
@@ -129,8 +80,8 @@ export function WritersSheet({
           API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId)
         );
         setExistingComposers(response.composers || []);
-      } catch (err) {
-        console.error('Failed to fetch composers:', err);
+      } catch {
+        // Silent fail - composers list will remain empty
       } finally {
         setLoadingComposers(false);
       }
@@ -186,21 +137,21 @@ export function WritersSheet({
     setComposerSearch('');
   };
 
-  // Create new composer
-  const handleAddNewComposer = async () => {
-    if (!apiClient || !newComposerData.firstName.trim() || !newComposerData.surname.trim()) return;
+  // Create new composer via shared dialog
+  const handleAddComposer = async (data: Omit<Composer, 'id'>) => {
+    if (!apiClient) return;
 
     setCreatingComposer(true);
     try {
       const response = await apiClient.post<{ composer: Composer }>(
         API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId),
         {
-          name: newComposerData.name,
-          first_name: newComposerData.firstName || null,
-          surname: newComposerData.surname || null,
-          cae: newComposerData.cae || null,
-          main_pro: newComposerData.mainPro || null,
-          controlled: newComposerData.controlled,
+          name: data.name,
+          first_name: data.first_name || null,
+          surname: data.surname || null,
+          cae: data.cae || null,
+          main_pro: data.main_pro || null,
+          controlled: data.controlled,
         }
       );
 
@@ -210,13 +161,13 @@ export function WritersSheet({
       const newWriter: Writer = {
         tempId: `writer-${Date.now()}`,
         isNew: false,
-        isControlled: newComposerData.controlled,
+        isControlled: data.controlled || false,
         composerId: createdComposer.id,
-        name: newComposerData.name,
-        firstName: newComposerData.firstName || undefined,
-        surname: newComposerData.surname || undefined,
-        cae: newComposerData.cae || undefined,
-        mainPro: newComposerData.mainPro || undefined,
+        name: data.name,
+        firstName: data.first_name || undefined,
+        surname: data.surname || undefined,
+        cae: data.cae || undefined,
+        mainPro: data.main_pro || undefined,
         role: 'CA',
         share: 0,
         mechanicalOwnership: 0,
@@ -225,17 +176,8 @@ export function WritersSheet({
         performanceCollection: 0,
       };
       onWritersChange([...writers, newWriter]);
-      setShowNewComposerDialog(false);
-      setNewComposerData({
-        name: '',
-        firstName: '',
-        surname: '',
-        cae: '',
-        mainPro: '',
-        controlled: true,
-      });
-    } catch (err) {
-      console.error('Failed to create composer:', err);
+    } catch {
+      // Silent fail - writer won't be added if composer creation fails
     } finally {
       setCreatingComposer(false);
     }
@@ -310,6 +252,7 @@ export function WritersSheet({
                   value={composerSearch}
                   onChange={(e) => setComposerSearch(e.target.value)}
                   className="pl-10"
+                  aria-label="Search composers"
                 />
               </div>
               <Button variant="outline" onClick={() => setShowNewComposerDialog(true)}>
@@ -456,6 +399,7 @@ export function WritersSheet({
                           size="icon"
                           onClick={() => removeWriter(writer.tempId)}
                           className="text-muted-foreground hover:text-destructive"
+                          aria-label="Remove writer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -666,152 +610,16 @@ export function WritersSheet({
         </SheetContent>
       </Sheet>
 
-      {/* New Composer Dialog */}
-      <Dialog open={showNewComposerDialog} onOpenChange={handleDialogChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Writer</DialogTitle>
-            <DialogDescription>Create a new composer/writer for this account.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>First Name <span className="text-destructive">*</span></Label>
-                <Input
-                  value={newComposerData.firstName}
-                  onChange={(e) => {
-                    const firstName = e.target.value;
-                    setNewComposerData((prev) => ({
-                      ...prev,
-                      firstName,
-                      name: `${firstName} ${prev.surname}`.trim(),
-                    }));
-                  }}
-                  placeholder="Legal first name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Surname <span className="text-destructive">*</span></Label>
-                <Input
-                  value={newComposerData.surname}
-                  onChange={(e) => {
-                    const surname = e.target.value;
-                    setNewComposerData((prev) => ({
-                      ...prev,
-                      surname,
-                      name: `${prev.firstName} ${surname}`.trim(),
-                    }));
-                  }}
-                  placeholder="Legal surname"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={newComposerData.name} readOnly disabled className="bg-muted" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>CAE/IPI Number</Label>
-                <Input
-                  value={newComposerData.cae}
-                  onChange={(e) => setNewComposerData((prev) => ({ ...prev, cae: e.target.value }))}
-                  placeholder="I-000000000-0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>PRO</Label>
-                <Select
-                  value={newComposerData.mainPro}
-                  onValueChange={(value) => setNewComposerData((prev) => ({ ...prev, mainPro: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select PRO" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRO_LIST.map((pro) => (
-                      <SelectItem key={pro} value={pro}>{pro}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="newControlled"
-                checked={newComposerData.controlled}
-                onCheckedChange={(checked) =>
-                  setNewComposerData((prev) => ({ ...prev, controlled: checked as boolean }))
-                }
-              />
-              <Label htmlFor="newControlled" className="font-normal cursor-pointer">
-                This is a controlled writer
-              </Label>
-            </div>
-          </div>
-
-          {/* Validation: CAE requires PRO and vice versa */}
-          {newComposerData.cae.trim() && !newComposerData.mainPro && (
-            <div className="flex items-center gap-2 text-destructive text-sm p-3 bg-destructive/10 rounded-lg">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              PRO is required when CAE/IPI Number is provided
-            </div>
-          )}
-          {newComposerData.mainPro && !newComposerData.cae.trim() && (
-            <div className="flex items-center gap-2 text-destructive text-sm p-3 bg-destructive/10 rounded-lg">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              CAE/IPI Number is required when PRO is selected
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleDialogChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddWriterClick}
-              disabled={
-                !newComposerData.firstName.trim() ||
-                !newComposerData.surname.trim() ||
-                creatingComposer ||
-                (newComposerData.cae.trim() !== '' && !newComposerData.mainPro) ||
-                (!!newComposerData.mainPro && !newComposerData.cae.trim())
-              }
-            >
-              {creatingComposer ? 'Adding...' : 'Add Writer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* PRO Confirmation Dialog */}
-      <Dialog open={showProConfirmDialog} onOpenChange={setShowProConfirmDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500" />
-              Confirm PRO Affiliation
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              Are you sure this writer is <strong>not affiliated</strong> with a PRO?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Writers affiliated with PROs (like ASCAP, BMI, PRS, GEMA) need their CAE/IPI
-              number for proper royalty collection. Missing this information may delay payments.
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowProConfirmDialog(false)}>
-              Go Back
-            </Button>
-            <Button onClick={handleConfirmNoProAffiliation}>
-              Yes, Not Affiliated
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add New Composer Dialog - using shared component */}
+      <AddComposerDialog
+        open={showNewComposerDialog}
+        onOpenChange={setShowNewComposerDialog}
+        onAddComposer={handleAddComposer}
+        existingComposers={existingComposers}
+        onAddExistingComposer={addExistingComposer}
+        addedComposerIds={writers.map((w) => w.composerId).filter(Boolean) as string[]}
+        creating={creatingComposer}
+      />
     </>
   );
 }

@@ -42,11 +42,11 @@ import {
   X,
   Copy,
   Check,
-  Link,
 } from 'lucide-react';
 import { API_ENDPOINTS } from '@/lib/constants';
 import { ApiClient } from '@/lib/api/client';
 import { createClient } from '@/lib/supabase/client';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import type { PermissionLevel, AccountMember, AccountInvite } from '@/lib/types';
 
 interface Account {
@@ -82,7 +82,7 @@ export function AccountSettings({
   // Team state
   const [members, setMembers] = useState<AccountMember[]>(initialMembers);
   const [invites, setInvites] = useState<AccountInvite[]>([]);
-  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [, setLoadingInvites] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePermCatalog, setInvitePermCatalog] = useState<PermissionLevel>('edit');
@@ -118,8 +118,8 @@ export function AccountSettings({
         API_ENDPOINTS.ACCOUNT_INVITES(account.id)
       );
       setInvites(response.invites || []);
-    } catch (err) {
-      console.error('Failed to fetch invites:', err);
+    } catch {
+      // Silent fail - invites list will remain empty
     } finally {
       setLoadingInvites(false);
     }
@@ -147,8 +147,8 @@ export function AccountSettings({
       });
       setSuccess('Settings saved successfully');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save settings');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to save settings. Please try again.'));
     } finally {
       setIsSaving(false);
     }
@@ -178,8 +178,8 @@ export function AccountSettings({
       // Generate and show the invite link
       const inviteLink = `${window.location.origin}/invite/${response.invite.token}`;
       setCreatedInviteLink(inviteLink);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send invite');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to send invite. Please try again.'));
     } finally {
       setSendingInvite(false);
     }
@@ -208,8 +208,8 @@ export function AccountSettings({
       await apiClient.delete(API_ENDPOINTS.ACCOUNT_INVITE(account.id, inviteId));
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
       setSuccess('Invite revoked');
-    } catch (err: any) {
-      setError(err.message || 'Failed to revoke invite');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to revoke invite. Please try again.'));
     }
   };
 
@@ -221,8 +221,8 @@ export function AccountSettings({
       await apiClient.delete(API_ENDPOINTS.ACCOUNT_MEMBER(account.id, userId));
       setMembers((prev) => prev.filter((m) => m.user_id !== userId));
       setSuccess('Member removed');
-    } catch (err: any) {
-      setError(err.message || 'Failed to remove member');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to remove member. Please try again.'));
     }
   };
 
@@ -253,8 +253,8 @@ export function AccountSettings({
       );
       setEditingMember(null);
       setSuccess('Member updated');
-    } catch (err: any) {
-      setError(err.message || 'Failed to update member');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to update member. Please try again.'));
     } finally {
       setSavingMember(false);
     }

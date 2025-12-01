@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useOnboarding } from '@/lib/hooks/use-onboarding';
 import { ROUTES, API_ENDPOINTS } from '@/lib/constants';
 import { inviteStorage } from '@/lib/utils/invite-storage';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import { ApiClient } from '@/lib/api/client';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ export default function TermsPage() {
   const [isAccepting, setIsAccepting] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<{ message: string; accountName: string } | null>(null);
 
@@ -59,6 +61,12 @@ export default function TermsPage() {
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const target = event.target as HTMLDivElement;
+    const scrollableHeight = target.scrollHeight - target.clientHeight;
+    const progress = scrollableHeight > 0
+      ? Math.min(100, Math.round((target.scrollTop / scrollableHeight) * 100))
+      : 100;
+    setScrollProgress(progress);
+
     const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
     if (isAtBottom) {
       setHasScrolledToBottom(true);
@@ -96,9 +104,8 @@ export default function TermsPage() {
           return;
         } catch (inviteErr) {
           // Show error modal instead of silently continuing
-          const errorMessage = inviteErr instanceof Error ? inviteErr.message : 'Failed to join account';
           setInviteError({
-            message: errorMessage,
+            message: sanitizeApiError(inviteErr, 'Failed to join account. Please try again.'),
             accountName: inviteContext.accountName,
           });
           setIsAccepting(false);
@@ -110,7 +117,7 @@ export default function TermsPage() {
       // Normal flow - go to create account
       router.push(ROUTES.ONBOARDING_CREATE_ACCOUNT);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to accept terms');
+      setError(sanitizeApiError(err, 'Failed to accept terms. Please try again.'));
       setIsAccepting(false);
     }
   };
@@ -223,7 +230,14 @@ export default function TermsPage() {
             </div>
 
             {/* Terms content */}
-            <div className="border rounded-xl">
+            <div className="border rounded-xl overflow-hidden">
+              {/* Progress bar */}
+              <div className="h-1 bg-muted">
+                <div
+                  className="h-full bg-primary transition-all duration-150"
+                  style={{ width: `${scrollProgress}%` }}
+                />
+              </div>
               <ScrollArea
                 className="h-[300px] p-6"
                 onScrollCapture={handleScroll}
@@ -306,7 +320,7 @@ export default function TermsPage() {
 
             {!hasScrolledToBottom && (
               <p className="text-xs text-muted-foreground text-center">
-                Please scroll to read the full terms
+                Please scroll to read the full terms ({scrollProgress}% read)
               </p>
             )}
 

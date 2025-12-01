@@ -4,7 +4,9 @@
  * Persists invite context in localStorage across the signup/verification flow.
  * This allows us to auto-accept the invite after ToS acceptance.
  *
- * Security: Stored data expires after 1 hour to limit exposure window.
+ * Security: Stored data expires after 24 hours to limit exposure window.
+ * Note: localStorage is accessible to any JS on the page, so we keep the
+ * expiration short to minimize risk if an XSS vulnerability is exploited.
  */
 
 const STORAGE_KEYS = {
@@ -15,8 +17,8 @@ const STORAGE_KEYS = {
   TIMESTAMP: 'pending_invite_timestamp',
 } as const;
 
-// Invite context expires after 7 days (matching invite link validity)
-const EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
+// Invite context expires after 24 hours (reduced from 7 days for security)
+const EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 export interface InviteContext {
   token: string;
@@ -40,7 +42,7 @@ export const inviteStorage = {
 
   /**
    * Get invite context from localStorage
-   * Returns null if no invite is stored or if it has expired (>1 hour old)
+   * Returns null if no invite is stored or if it has expired (>24 hours old)
    */
   get(): InviteContext | null {
     if (typeof window === 'undefined') return null;

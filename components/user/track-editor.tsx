@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import { 
   ArrowLeft, 
   Save, 
@@ -132,8 +133,8 @@ export function UserTrackEditor({
           router.refresh();
         }, 1500);
       }
-    } catch (err: any) {
-      setError(err.message || `Failed to ${isNew ? 'create' : 'save'} recording`);
+    } catch (err) {
+      setError(sanitizeApiError(err, `Failed to ${isNew ? 'create' : 'save'} recording. Please try again.`));
     } finally {
       setSaving(false);
     }
@@ -149,8 +150,8 @@ export function UserTrackEditor({
     try {
       await apiClient.delete(`${API_ENDPOINTS.TRACKS}/${track.id}`);
       router.push(ROUTES.WORKSPACE_TRACKS(accountId));
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete recording');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to delete recording. Please try again.'));
       setDeleting(false);
     }
   };
@@ -176,7 +177,7 @@ export function UserTrackEditor({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={ROUTES.WORKSPACE_TRACKS(accountId)}>
+            <Link href={ROUTES.WORKSPACE_TRACKS(accountId)} aria-label="Back to tracks">
               <ArrowLeft className="w-4 h-4" />
             </Link>
           </Button>

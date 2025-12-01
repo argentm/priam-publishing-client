@@ -43,7 +43,7 @@ export function UserLayout({ children, user, accounts, currentAccount: defaultAc
         "flex flex-col min-h-screen transition-all duration-300",
         isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
       )}>
-        <UserHeader user={user} currentAccount={currentAccount} />
+        <UserHeader user={user} currentAccount={currentAccount} accounts={accounts} />
         
         {/* Suspended User Banner */}
         {user.suspended && (

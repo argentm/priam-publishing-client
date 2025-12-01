@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/lib/constants';
-import { Music2, Loader2, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { sanitizeAuthError } from '@/lib/utils/auth-errors';
+import { Loader2, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -59,7 +61,7 @@ export default function ResetPasswordPage() {
       });
 
       if (error) {
-        setError(error.message);
+        setError(sanitizeAuthError(error.message, 'passwordReset'));
         setLoading(false);
         return;
       }
@@ -70,7 +72,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push(ROUTES.DASHBOARD);
       }, 3000);
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
@@ -126,8 +128,13 @@ export default function ResetPasswordPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={32}
+                height={32}
+              />
             </div>
             <span className="text-2xl font-bold text-white">Priam</span>
           </div>
@@ -152,8 +159,13 @@ export default function ResetPasswordPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Music2 className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border">
+              <Image
+                src="/logos/priam-icon.svg"
+                alt="Priam"
+                width={24}
+                height={24}
+              />
             </div>
             <span className="text-2xl font-bold">Priam</span>
           </div>
@@ -212,6 +224,7 @@ export default function ResetPasswordPage() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -240,6 +253,7 @@ export default function ResetPasswordPage() {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                     >
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>

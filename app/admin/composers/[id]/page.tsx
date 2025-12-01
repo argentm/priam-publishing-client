@@ -42,9 +42,10 @@ async function getComposer(id: string): Promise<Composer | null> {
 export default async function ComposerDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const composer = await getComposer(params.id);
+  const { id } = await params;
+  const composer = await getComposer(id);
 
   if (!composer) {
     redirect('/admin/composers');

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import type { User as UserType } from '@/lib/types';
 import { MobileAdminSidebar } from './admin-sidebar';
+import { NotificationBell } from '@/components/notifications';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -31,6 +32,10 @@ const pageInfoMap: Record<string, PageInfo> = {
   '/admin/users': {
     title: 'Users',
     description: 'Manage all users in the system',
+  },
+  '/admin/users/new': {
+    title: 'New User',
+    description: 'Create a new user account',
   },
   '/admin/accounts': {
     title: 'Accounts',
@@ -63,14 +68,6 @@ const pageInfoMap: Record<string, PageInfo> = {
   '/admin/contracts/new': {
     title: 'New Contract',
     description: 'Create a new contract',
-  },
-  '/admin/payees': {
-    title: 'Payees',
-    description: 'Manage all payees across all accounts',
-  },
-  '/admin/payees/new': {
-    title: 'New Payee',
-    description: 'Create a new payee',
   },
 };
 
@@ -178,6 +175,8 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
         {/* User Info and Actions */}
         <div className="flex items-center space-x-3">
+          {/* Notification Bell */}
+          <NotificationBell />
           <div className="hidden md:flex items-center space-x-3">
             <div className="text-right">
               <p className="text-sm font-medium text-foreground">{displayName}</p>

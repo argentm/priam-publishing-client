@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { ROUTES } from '@/lib/constants';
+import { sanitizeAuthError } from '@/lib/utils/auth-errors';
 import { Button } from '@/components/ui/button';
 import { StepIndicator, StepIndicatorCompact } from '@/components/onboarding/step-indicator';
 import {
@@ -131,7 +132,7 @@ function VerifyEmailContent() {
       setCooldownRemaining(RESEND_COOLDOWN_SECONDS);
       setTimeout(() => setResendSuccess(false), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend email');
+      setError(sanitizeAuthError(err instanceof Error ? err.message : '', 'emailResend'));
     } finally {
       setIsResending(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,28 @@ import { Badge } from '@/components/ui/badge';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
-import { Save, Trash2, Copy, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Save, Trash2, Copy, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Plus, Globe, ChevronDown, ChevronRight, MessageSquareX } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
+import { AdminAlternateTitlesSheet, AdminPerformersSheet, AdminTracksSheet, AdminWritersSheet, AdminPublishersSheet } from './sheets';
+import type { AdminAlternateTitle, AdminPerformer, AdminTrack, AdminWriter, EditorMode } from './types';
+import { WRITER_ROLES, SYSTEM_PRIAM_PUBLISHER_ID } from '@/components/shared/work-wizard/constants';
 
 interface Work {
   id: string;
@@ -58,6 +78,9 @@ interface Work {
   validation_errors?: string[];
   approval_status?: string;
   approved_date?: string | null;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
   on_hold?: boolean;
   total_collection?: Record<string, unknown> | null;
   total_participation?: number;
@@ -78,6 +101,40 @@ interface Work {
     id: string;
     name: string;
   };
+  // Related data from API
+  alternate_titles?: Array<{
+    id: string;
+    title: string;
+    title_type?: string | null;
+    language?: string | null;
+  }>;
+  composers?: Array<{
+    id: string;
+    composer_id: string;
+    role?: string | null;
+    share?: number | null;
+    composer: {
+      id: string;
+      name: string;
+      cae?: string | null;
+      main_pro?: string | null;
+      controlled?: boolean;
+    };
+  }>;
+  performers?: Array<{
+    id: string;
+    performer_name: string;
+  }>;
+  tracks?: Array<{
+    id: string;
+    track_id: string;
+    track: {
+      id: string;
+      title: string;
+      isrc?: string | null;
+      artist?: string | null;
+    };
+  }>;
 }
 
 interface WorkEditorProps {
@@ -93,6 +150,71 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Sheet visibility states
+  const [showAlternateTitlesSheet, setShowAlternateTitlesSheet] = useState(false);
+  const [showPerformersSheet, setShowPerformersSheet] = useState(false);
+  const [showTracksSheet, setShowTracksSheet] = useState(false);
+  const [showWritersSheet, setShowWritersSheet] = useState(false);
+
+  // Rejection modal state
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Related data states - initialized from work prop
+  const [alternateTitles, setAlternateTitles] = useState<AdminAlternateTitle[]>(
+    initialWork.alternate_titles?.map((at, i) => ({
+      id: at.id,
+      tempId: `alt-${at.id || i}`,
+      title: at.title,
+      title_type: at.title_type,
+      language: at.language,
+    })) || []
+  );
+
+  const [performers, setPerformers] = useState<AdminPerformer[]>(
+    initialWork.performers?.map((p, i) => ({
+      id: p.id,
+      tempId: `performer-${p.id || i}`,
+      performer_name: p.performer_name,
+    })) || []
+  );
+
+  const [tracks, setTracks] = useState<AdminTrack[]>(
+    initialWork.tracks?.map((t) => ({
+      id: t.track.id,
+      title: t.track.title,
+      isrc: t.track.isrc,
+      artist: t.track.artist,
+    })) || []
+  );
+
+  const [writers, setWriters] = useState<AdminWriter[]>(
+    initialWork.composers?.map((c, i) => ({
+      tempId: `writer-${c.composer_id || i}`,
+      composerId: c.composer_id,
+      name: c.composer?.name || 'Unknown',
+      cae: c.composer?.cae || undefined,
+      mainPro: c.composer?.main_pro || undefined,
+      role: c.role || 'CA',
+      share: c.share || 0,
+      isControlled: c.composer?.controlled || false,
+      isNew: false,
+      mechanicalOwnership: 0,
+      performanceOwnership: 0,
+      mechanicalCollection: 0,
+      performanceCollection: 0,
+    })) || []
+  );
+
+  // Editor mode for simple/advanced ownership
+  const [editorMode, setEditorMode] = useState<EditorMode>('simple');
+
+  // Publishers state for dropdown
+  const [publishers, setPublishers] = useState<Array<{id: string; name: string}>>([]);
+  const [loadingPublishers, setLoadingPublishers] = useState(false);
+  const [showPublishersSheet, setShowPublishersSheet] = useState(false);
+
+
   const supabase = createClient();
   const [apiClient, setApiClient] = useState<ApiClient | null>(null);
 
@@ -103,6 +225,25 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
     };
     initClient();
   }, [supabase]);
+
+  // Fetch publishers for dropdown
+  useEffect(() => {
+    const fetchPublishers = async () => {
+      if (!apiClient || !work.account_id) return;
+      setLoadingPublishers(true);
+      try {
+        const response = await apiClient.get<{ publishers: Array<{id: string; name: string}>; total: number }>(
+          `${API_ENDPOINTS.ADMIN_ACCOUNT_PUBLISHERS(work.account_id)}?limit=100`
+        );
+        setPublishers(response.publishers || []);
+      } catch (err) {
+        console.error('Failed to fetch publishers:', err);
+      } finally {
+        setLoadingPublishers(false);
+      }
+    };
+    fetchPublishers();
+  }, [apiClient, work.account_id]);
 
   const handleSave = async () => {
     if (!apiClient) return;
@@ -169,18 +310,58 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
 
   const handleApprove = async () => {
     if (!apiClient) return;
+    // Can only approve works that are in review
+    if (work.approval_status !== 'in_review') {
+      setError('Only works in review can be approved');
+      return;
+    }
     setSaving(true);
     try {
-      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+      const response = await apiClient.post(API_ENDPOINTS.ADMIN_WORK_APPROVE(work.id), {});
+      setWork({
         ...work,
         approval_status: 'approved',
         approved_date: new Date().toISOString(),
+        reviewed_at: new Date().toISOString(),
+        rejection_reason: null,
       });
-      setWork({ ...work, approval_status: 'approved', approved_date: new Date().toISOString() });
       setSuccess(true);
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Failed to approve work');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!apiClient) return;
+    if (!rejectionReason.trim()) {
+      setError('Please provide a reason for rejection');
+      return;
+    }
+    // Can only reject works that are in review
+    if (work.approval_status !== 'in_review') {
+      setError('Only works in review can be rejected');
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiClient.post(API_ENDPOINTS.ADMIN_WORK_REJECT(work.id), {
+        rejection_reason: rejectionReason.trim(),
+      });
+      setWork({
+        ...work,
+        approval_status: 'rejected',
+        rejection_reason: rejectionReason.trim(),
+        reviewed_at: new Date().toISOString(),
+      });
+      setShowRejectDialog(false);
+      setRejectionReason('');
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to reject work');
     } finally {
       setSaving(false);
     }
@@ -208,6 +389,181 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
     setWork({ ...work, [field]: value });
   };
 
+  // Save handler for alternate titles
+  const handleSaveAlternateTitles = async () => {
+    if (!apiClient) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+        alternate_titles: alternateTitles.map((at) => ({
+          title: at.title,
+          language: at.language,
+          title_type: at.title_type,
+        })),
+      });
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save alternate titles');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save handler for performers
+  const handleSavePerformers = async () => {
+    if (!apiClient) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+        performers: performers.map((p) => ({
+          performer_name: p.performer_name,
+        })),
+      });
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save performers');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save handler for tracks
+  const handleSaveTracks = async () => {
+    if (!apiClient) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+        tracks: tracks.map((t) => ({ id: t.id })),
+      });
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save tracks');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save handler for writers/composers
+  const handleSaveWriters = async () => {
+    if (!apiClient) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+        composers: writers.map((w) => ({
+          composerId: w.composerId,
+          role: w.role,
+          share: w.share,
+          mechanicalOwnership: w.mechanicalOwnership,
+          performanceOwnership: w.performanceOwnership,
+          mechanicalCollection: w.mechanicalCollection,
+          performanceCollection: w.performanceCollection,
+        })),
+      });
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save writers');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Generate IP Chain from writers for each selected territory
+  const generateIpChain = useCallback(() => {
+    const ipChainChildren = writers
+      .map((writer) => {
+        if (!writer.composerId) return null;
+        const roleObj = WRITER_ROLES.find((r) => r.value === writer.role);
+        const roleLabel = roleObj?.label || 'Composer/Author';
+        const ownership = editorMode === 'simple' ? writer.share : writer.mechanicalOwnership;
+
+        if (writer.isControlled) {
+          // Use selected publisher or fallback to system default
+          const pubId = writer.publisherId || SYSTEM_PRIAM_PUBLISHER_ID;
+          return {
+            publisherId: pubId,
+            category: 'Original Publisher',
+            controlled: true,
+            mechanicalOwnership: 0,
+            performanceOwnership: 0,
+            mechanicalCollection: ownership,
+            performanceCollection: ownership * 0.5,
+            children: [{
+              composerId: writer.composerId,
+              category: roleLabel,
+              controlled: true,
+              mechanicalOwnership: ownership,
+              performanceOwnership: ownership,
+              mechanicalCollection: 0,
+              performanceCollection: ownership * 0.5,
+            }],
+          };
+        } else {
+          return {
+            composerId: writer.composerId,
+            category: roleLabel,
+            controlled: false,
+            mechanicalOwnership: ownership,
+            performanceOwnership: ownership,
+            mechanicalCollection: ownership,
+            performanceCollection: ownership,
+          };
+        }
+      })
+      .filter(Boolean);
+
+    // Return single 'World' territory (default for all works)
+    return [{ territory: 'World', children: ipChainChildren }];
+  }, [writers, editorMode]);
+
+  // Save handler for IP chain (saves composers + generated rights_chain)
+  const handleSaveIpChain = async () => {
+    if (!apiClient) return;
+
+    // Validation
+    const totalShare = writers.reduce((sum, w) => sum + (w.share || 0), 0);
+    if (writers.length > 0 && Math.abs(totalShare - 100) > 0.01) {
+      setError(`Total ownership must be 100% (Currently: ${totalShare.toFixed(1)}%)`);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      const rightsChain = generateIpChain();
+      await apiClient.put(`${API_ENDPOINTS.ADMIN_WORKS}/${work.id}`, {
+        composers: writers.map((w) => ({
+          composerId: w.composerId,
+          role: w.role,
+          share: w.share,
+          mechanicalOwnership: w.mechanicalOwnership,
+          performanceOwnership: w.performanceOwnership,
+          mechanicalCollection: w.mechanicalCollection,
+          performanceCollection: w.performanceCollection,
+        })),
+        rights_chain: rightsChain,
+      });
+      setSuccess(true);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save IP chain');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handler for publisher creation
+  const handlePublisherCreated = (publisher: { id: string; name: string }) => {
+    setPublishers((prev) => [...prev, publisher]);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -230,13 +586,25 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Approve button - only enabled for works in review */}
           <Button
             variant={work.approval_status === 'approved' ? 'outline' : 'default'}
             onClick={handleApprove}
-            disabled={saving || work.approval_status === 'approved'}
+            disabled={saving || work.approval_status !== 'in_review'}
+            title={work.approval_status !== 'in_review' ? 'Only works in review can be approved' : 'Approve this work'}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Approve
+            {work.approval_status === 'approved' ? 'Approved' : 'Approve'}
+          </Button>
+          {/* Reject button - only enabled for works in review */}
+          <Button
+            variant={work.approval_status === 'rejected' ? 'outline' : 'destructive'}
+            onClick={() => setShowRejectDialog(true)}
+            disabled={saving || work.approval_status !== 'in_review'}
+            title={work.approval_status !== 'in_review' ? 'Only works in review can be rejected' : 'Reject this work'}
+          >
+            <MessageSquareX className="w-4 h-4 mr-2" />
+            {work.approval_status === 'rejected' ? 'Rejected' : 'Reject'}
           </Button>
           <Button
             variant={work.on_hold ? 'default' : 'outline'}
@@ -244,11 +612,11 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
             disabled={saving}
           >
             <AlertCircle className="w-4 h-4 mr-2" />
-            {work.on_hold ? 'Hold' : 'Hold'}
+            {work.on_hold ? 'Release Hold' : 'Hold'}
           </Button>
           {!isNew && (
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={handleDelete}
               disabled={loading}
             >
@@ -355,19 +723,15 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
                 </div>
 
                 <div className="space-y-2">
-                  <Label>ALTERNATE TITLE</Label>
-                  <Button variant="outline" size="sm" type="button">
-                    + Title
+                  <Label>ALTERNATE TITLES</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowAlternateTitlesSheet(true)}
+                  >
+                    + Title ({alternateTitles.length})
                   </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="composer">COMPOSER</Label>
-                  <Input
-                    id="composer"
-                    value=""
-                    placeholder="Search composer..."
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -604,29 +968,31 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
 
                 <div className="space-y-2">
                   <Label>CATALOGUE GROUPS</Label>
-                  <Input placeholder="Enter catalogue groups" />
+                  <Input placeholder="Enter catalogue groups" readOnly />
                 </div>
 
                 <div className="space-y-2">
                   <Label>PERFORMERS</Label>
-                  <Button variant="outline" size="sm" type="button">
-                    + Performer
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowPerformersSheet(true)}
+                  >
+                    + Performer ({performers.length})
                   </Button>
                 </div>
 
                 <div className="space-y-2">
                   <Label>TRACK ASSOCIATIONS</Label>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">TRACKS</p>
-                    <div className="flex gap-2">
-                      <Button variant="default" size="sm" type="button">
-                        + Track
-                      </Button>
-                      <Button variant="secondary" size="sm" type="button">
-                        + Create Track
-                      </Button>
-                    </div>
-                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowTracksSheet(true)}
+                  >
+                    + Track ({tracks.length})
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -648,22 +1014,419 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
 
         {/* IP Chain Tab */}
         <TabsContent value="ip-chain">
-          <Card>
-            <CardHeader>
-              <CardTitle>IP CHAIN</CardTitle>
-              <CardDescription>Manage intellectual property chain</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {work.validation_errors?.some(e => e.includes('IP Chain')) && (
-                <div className="mb-4 p-4 bg-destructive/10 border border-destructive rounded-md">
-                  <p className="text-sm text-destructive">
-                    Default Chain: At least one IP Chain has to be controlled
-                  </p>
+          <div className="space-y-6">
+            {/* Composers Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>COMPOSERS & WRITERS</CardTitle>
+                  <CardDescription>Manage composers and their ownership shares</CardDescription>
                 </div>
-              )}
-              <p className="text-muted-foreground">IP Chain management coming soon...</p>
-            </CardContent>
-          </Card>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="editor-mode" className="text-sm">Simple</Label>
+                    <Switch
+                      id="editor-mode"
+                      checked={editorMode === 'advanced'}
+                      onCheckedChange={(checked) => setEditorMode(checked ? 'advanced' : 'simple')}
+                    />
+                    <Label htmlFor="editor-mode" className="text-sm">Advanced</Label>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowWritersSheet(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Composer
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {work.validation_errors?.some(e => e.includes('IP Chain')) && (
+                  <div className="mb-4 p-4 bg-destructive/10 border border-destructive rounded-md">
+                    <p className="text-sm text-destructive">
+                      Default Chain: At least one IP Chain has to be controlled
+                    </p>
+                  </div>
+                )}
+
+                {writers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No composers added yet.</p>
+                    <p className="text-sm mt-1">Click "Add Composer" to add writers to this work.</p>
+                  </div>
+                ) : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>NAME</TableHead>
+                          <TableHead>ROLE</TableHead>
+                          <TableHead className="w-24">SHARE %</TableHead>
+                          {editorMode === 'advanced' && (
+                            <>
+                              <TableHead className="w-24">MECH OWN</TableHead>
+                              <TableHead className="w-24">PERF OWN</TableHead>
+                              <TableHead className="w-24">MECH COLL</TableHead>
+                              <TableHead className="w-24">PERF COLL</TableHead>
+                            </>
+                          )}
+                          <TableHead className="w-24">CONTROLLED</TableHead>
+                          <TableHead>PUBLISHER</TableHead>
+                          <TableHead className="w-16">ACTIONS</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {writers.map((writer, index) => (
+                          <TableRow key={writer.tempId}>
+                            <TableCell>
+                              <div>
+                                <span className="font-medium">{writer.name}</span>
+                                {writer.cae && (
+                                  <span className="text-xs text-muted-foreground ml-2">
+                                    CAE: {writer.cae}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={writer.role}
+                                onValueChange={(value) => {
+                                  const updated = [...writers];
+                                  updated[index] = { ...writer, role: value };
+                                  setWriters(updated);
+                                }}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {WRITER_ROLES.map((role) => (
+                                    <SelectItem key={role.value} value={role.value}>
+                                      {role.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.01}
+                                className="w-20"
+                                value={writer.share || ''}
+                                onChange={(e) => {
+                                  const updated = [...writers];
+                                  updated[index] = { ...writer, share: Math.min(100, parseFloat(e.target.value) || 0) };
+                                  setWriters(updated);
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === '') {
+                                    const updated = [...writers];
+                                    updated[index] = { ...writer, share: 0 };
+                                    setWriters(updated);
+                                  }
+                                }}
+                                placeholder="0"
+                              />
+                            </TableCell>
+                            {editorMode === 'advanced' && (
+                              <>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.01}
+                                    className="w-20"
+                                    value={writer.mechanicalOwnership || ''}
+                                    onChange={(e) => {
+                                      const updated = [...writers];
+                                      updated[index] = { ...writer, mechanicalOwnership: Math.min(100, parseFloat(e.target.value) || 0) };
+                                      setWriters(updated);
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') {
+                                        const updated = [...writers];
+                                        updated[index] = { ...writer, mechanicalOwnership: 0 };
+                                        setWriters(updated);
+                                      }
+                                    }}
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.01}
+                                    className="w-20"
+                                    value={writer.performanceOwnership || ''}
+                                    onChange={(e) => {
+                                      const updated = [...writers];
+                                      updated[index] = { ...writer, performanceOwnership: Math.min(100, parseFloat(e.target.value) || 0) };
+                                      setWriters(updated);
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') {
+                                        const updated = [...writers];
+                                        updated[index] = { ...writer, performanceOwnership: 0 };
+                                        setWriters(updated);
+                                      }
+                                    }}
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.01}
+                                    className="w-20"
+                                    value={writer.mechanicalCollection || ''}
+                                    onChange={(e) => {
+                                      const updated = [...writers];
+                                      updated[index] = { ...writer, mechanicalCollection: Math.min(100, parseFloat(e.target.value) || 0) };
+                                      setWriters(updated);
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') {
+                                        const updated = [...writers];
+                                        updated[index] = { ...writer, mechanicalCollection: 0 };
+                                        setWriters(updated);
+                                      }
+                                    }}
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.01}
+                                    className="w-20"
+                                    value={writer.performanceCollection || ''}
+                                    onChange={(e) => {
+                                      const updated = [...writers];
+                                      updated[index] = { ...writer, performanceCollection: Math.min(100, parseFloat(e.target.value) || 0) };
+                                      setWriters(updated);
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') {
+                                        const updated = [...writers];
+                                        updated[index] = { ...writer, performanceCollection: 0 };
+                                        setWriters(updated);
+                                      }
+                                    }}
+                                    placeholder="0"
+                                  />
+                                </TableCell>
+                              </>
+                            )}
+                            <TableCell>
+                              <Checkbox
+                                checked={writer.isControlled}
+                                onCheckedChange={(checked) => {
+                                  const updated = [...writers];
+                                  updated[index] = {
+                                    ...writer,
+                                    isControlled: checked === true,
+                                    // Reset publisher when unchecked
+                                    publisherId: checked === true ? writer.publisherId : undefined,
+                                    publisherName: checked === true ? writer.publisherName : undefined,
+                                  };
+                                  setWriters(updated);
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {writer.isControlled ? (
+                                <div className="flex items-center gap-1">
+                                  <Select
+                                    value={writer.publisherId || SYSTEM_PRIAM_PUBLISHER_ID}
+                                    onValueChange={(value) => {
+                                      const updated = [...writers];
+                                      const pub = publishers.find(p => p.id === value);
+                                      updated[index] = {
+                                        ...writer,
+                                        publisherId: value,
+                                        publisherName: pub?.name || 'Priam Music Publishing & Sync',
+                                      };
+                                      setWriters(updated);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-40">
+                                      <SelectValue placeholder="Select publisher" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value={SYSTEM_PRIAM_PUBLISHER_ID}>
+                                        Priam Music Publishing & Sync
+                                      </SelectItem>
+                                      {publishers.map((pub) => (
+                                        <SelectItem key={pub.id} value={pub.id}>
+                                          {pub.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setShowPublishersSheet(true)}
+                                    title="Create new publisher"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  setWriters(writers.filter((_, i) => i !== index));
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+
+                    {/* Total validation */}
+                    <div className="mt-4 flex justify-between items-center p-3 bg-muted/50 rounded-md">
+                      <span className="font-medium">Total Ownership:</span>
+                      <span className={`font-bold ${
+                        Math.abs(writers.reduce((sum, w) => sum + (w.share || 0), 0) - 100) < 0.01
+                          ? 'text-green-600'
+                          : 'text-destructive'
+                      }`}>
+                        {writers.reduce((sum, w) => sum + (w.share || 0), 0).toFixed(2)}%
+                        {Math.abs(writers.reduce((sum, w) => sum + (w.share || 0), 0) - 100) >= 0.01 && (
+                          <span className="ml-2 text-sm font-normal">(must equal 100%)</span>
+                        )}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* IP Chain Preview Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  IP CHAIN PREVIEW
+                </CardTitle>
+                <CardDescription>Auto-generated rights chain based on composers above</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {writers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Add composers to see the generated IP chain.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {generateIpChain().map((territory, tIdx) => (
+                      <div key={tIdx} className="border rounded-lg p-4">
+                        <div className="flex items-center gap-2 font-medium mb-3">
+                          <Globe className="w-4 h-4" />
+                          {territory.territory}
+                        </div>
+                        <div className="ml-6 space-y-2">
+                          {(territory.children || []).map((node: any, nIdx: number) => (
+                            <div key={nIdx} className="border-l-2 border-muted pl-4 py-2">
+                              {node.publisherId ? (
+                                // Publisher node with nested composer
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">Publisher</Badge>
+                                    <span className="font-medium">
+                                      {publishers.find(p => p.id === node.publisherId)?.name ||
+                                       (node.publisherId === SYSTEM_PRIAM_PUBLISHER_ID ? 'Priam Music Publishing & Sync' : 'Unknown Publisher')}
+                                    </span>
+                                    <Badge variant="secondary" className="text-xs">{node.category}</Badge>
+                                    {node.controlled && <Badge className="text-xs bg-green-600">Controlled</Badge>}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Mech Coll: {node.mechanicalCollection}% | Perf Coll: {node.performanceCollection}%
+                                  </div>
+                                  {/* Nested composer */}
+                                  {node.children?.map((child: any, cIdx: number) => (
+                                    <div key={cIdx} className="ml-4 border-l-2 border-primary/30 pl-4 py-2">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-xs">Composer</Badge>
+                                        <span className="font-medium">
+                                          {writers.find(w => w.composerId === child.composerId)?.name || 'Unknown'}
+                                        </span>
+                                        <Badge variant="secondary" className="text-xs">{child.category}</Badge>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Mech Own: {child.mechanicalOwnership}% | Perf Own: {child.performanceOwnership}%
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                // Non-controlled composer (top-level)
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">Composer</Badge>
+                                    <span className="font-medium">
+                                      {writers.find(w => w.composerId === node.composerId)?.name || 'Unknown'}
+                                    </span>
+                                    <Badge variant="secondary" className="text-xs">{node.category}</Badge>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Mech Own: {node.mechanicalOwnership}% | Perf Own: {node.performanceOwnership}%
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveIpChain}
+                disabled={saving || writers.length === 0 || Math.abs(writers.reduce((sum, w) => sum + (w.share || 0), 0) - 100) >= 0.01}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save IP Chain
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Rights Tab */}
@@ -733,6 +1496,92 @@ export function WorkEditor({ work: initialWork, isNew = false }: WorkEditorProps
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Sheet Components */}
+      <AdminAlternateTitlesSheet
+        open={showAlternateTitlesSheet}
+        onOpenChange={setShowAlternateTitlesSheet}
+        alternateTitles={alternateTitles}
+        onAlternateTitlesChange={setAlternateTitles}
+        onSave={handleSaveAlternateTitles}
+        saving={saving}
+      />
+      <AdminPerformersSheet
+        open={showPerformersSheet}
+        onOpenChange={setShowPerformersSheet}
+        performers={performers}
+        onPerformersChange={setPerformers}
+        onSave={handleSavePerformers}
+        saving={saving}
+      />
+      <AdminTracksSheet
+        open={showTracksSheet}
+        onOpenChange={setShowTracksSheet}
+        workId={work.id}
+        accountId={work.account_id}
+        tracks={tracks}
+        onTracksChange={setTracks}
+        onSave={handleSaveTracks}
+        saving={saving}
+      />
+      <AdminWritersSheet
+        open={showWritersSheet}
+        onOpenChange={setShowWritersSheet}
+        workId={work.id}
+        accountId={work.account_id}
+        writers={writers}
+        onWritersChange={setWriters}
+        onSave={handleSaveWriters}
+        saving={saving}
+      />
+      <AdminPublishersSheet
+        open={showPublishersSheet}
+        onOpenChange={setShowPublishersSheet}
+        accountId={work.account_id}
+        onPublisherCreated={handlePublisherCreated}
+      />
+
+      {/* Rejection Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Work</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting "{work.title}". The creator will be notified and can revise and resubmit.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="rejection-reason">Reason for Rejection</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Explain what needs to be corrected..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectDialog(false);
+                setRejectionReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={saving || !rejectionReason.trim()}
+            >
+              {saving ? 'Rejecting...' : 'Reject Work'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

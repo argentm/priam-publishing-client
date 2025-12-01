@@ -60,7 +60,9 @@ function ErrorContent() {
   const IconComponent = config.icon;
 
   const handleRetry = () => {
-    if (fromPath) {
+    // Security: Only allow relative paths to prevent open redirect attacks
+    // Must start with '/' but not '//' (protocol-relative URLs)
+    if (fromPath && fromPath.startsWith('/') && !fromPath.startsWith('//')) {
       window.location.href = fromPath;
     } else {
       window.location.reload();

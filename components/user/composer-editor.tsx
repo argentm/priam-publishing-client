@@ -12,18 +12,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { API_ENDPOINTS, ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { ApiClient } from '@/lib/api/client';
+import { sanitizeApiError } from '@/lib/utils/api-errors';
 import { ProSelector } from '@/components/ui/pro-selector';
 import {
   ArrowLeft,
-  ArrowRight,
   Save,
   CheckCircle2,
   XCircle,
-  Plus,
   Trash2,
   UserCircle,
-  Music,
-  AlertCircle
 } from 'lucide-react';
 
 interface Composer {
@@ -126,8 +123,8 @@ export function UserComposerEditor({
           router.refresh();
         }, 1500);
       }
-    } catch (err: any) {
-      setError(err.message || `Failed to ${isNew ? 'create' : 'save'} composer`);
+    } catch (err) {
+      setError(sanitizeApiError(err, `Failed to ${isNew ? 'create' : 'save'} composer. Please try again.`));
     } finally {
       setSaving(false);
     }
@@ -143,8 +140,8 @@ export function UserComposerEditor({
     try {
       await apiClient.delete(`${API_ENDPOINTS.DASHBOARD_COMPOSERS(accountId)}/${composer.id}`);
       router.push(ROUTES.WORKSPACE_COMPOSERS(accountId));
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete composer');
+    } catch (err) {
+      setError(sanitizeApiError(err, 'Failed to delete composer. Please try again.'));
       setDeleting(false);
     }
   };
@@ -159,7 +156,7 @@ export function UserComposerEditor({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={ROUTES.WORKSPACE_COMPOSERS(accountId)}>
+            <Link href={ROUTES.WORKSPACE_COMPOSERS(accountId)} aria-label="Back to composers">
               <ArrowLeft className="w-4 h-4" />
             </Link>
           </Button>
@@ -288,7 +285,7 @@ export function UserComposerEditor({
                   Controlled Writer
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Check if this writer's publishing is administered by your account
+                  Check if this writer&apos;s publishing is administered by your account
                 </p>
               </div>
             </div>

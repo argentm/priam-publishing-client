@@ -79,6 +79,9 @@ export function WorkCreationWizard({ accountId, accountName }: WorkCreationWizar
         <WorkInfoStep
           workData={wizard.workData}
           onWorkDataChange={wizard.setWorkData}
+          detailsData={wizard.detailsData}
+          onDetailsDataChange={wizard.setDetailsData}
+          accountName={accountName}
           onNext={wizard.goToWriters}
         />
       )}
